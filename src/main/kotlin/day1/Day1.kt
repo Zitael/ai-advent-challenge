@@ -1,5 +1,8 @@
-package ru.ai_advent_app.day1.day1
+package day1
 
+import api.OpenRouterMessage
+import api.OpenRouterRequest
+import api.OpenRouterResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.header
@@ -8,9 +11,6 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
-import ru.ai_advent_app.day1.dto.OpenRouterMessage
-import ru.ai_advent_app.day1.dto.OpenRouterRequest
-import ru.ai_advent_app.day1.dto.OpenRouterResponse
 
 class Day1 {
 
@@ -60,7 +60,5 @@ class Day1 {
                 println("Error: ${e.message}")
             }
         }
-
-        client.close()
     }
 }

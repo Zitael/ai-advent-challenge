@@ -1,17 +1,12 @@
 package ru.ai_advent_app.day1
 
+import day1.Day1
+import day2.Day2
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.http.*
 import io.ktor.serialization.jackson.*
-import ru.ai_advent_app.day1.day1.Day1
-import ru.ai_advent_app.day1.dto.OpenRouterMessage
-import ru.ai_advent_app.day1.dto.OpenRouterRequest
-import ru.ai_advent_app.day1.dto.OpenRouterResponse
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -32,7 +27,7 @@ suspend fun main() {
         }
     }
 
-    val runner = Day1()
+    val runner = Day2()
 
     runner.run(model, client, apiKey)
 
