@@ -1,4 +1,4 @@
-package ru.ai_advent_app
+package ru.ai_advent_app.day1
 
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
@@ -8,9 +8,10 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.jackson.*
-import ru.ai_advent_app.dto.OpenRouterMessage
-import ru.ai_advent_app.dto.OpenRouterRequest
-import ru.ai_advent_app.dto.OpenRouterResponse
+import ru.ai_advent_app.day1.day1.Day1
+import ru.ai_advent_app.day1.dto.OpenRouterMessage
+import ru.ai_advent_app.day1.dto.OpenRouterRequest
+import ru.ai_advent_app.day1.dto.OpenRouterResponse
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -31,51 +32,9 @@ suspend fun main() {
         }
     }
 
-    println("AI Advent Challenge — Day 1")
-    println("Model: $model")
-    println("Type your message. Type 'exit' to quit.")
-    println()
+    val runner = Day1()
 
-    while (true) {
-        print("> ")
-        val userPrompt = readlnOrNull()?.trim()
-
-        if (userPrompt.isNullOrBlank()) continue
-        if (userPrompt.equals("exit", ignoreCase = true)) break
-
-        try {
-            val response: OpenRouterResponse =
-                client.post("https://openrouter.ai/api/v1/chat/completions") {
-                    header(HttpHeaders.Authorization, "Bearer $apiKey")
-                    contentType(ContentType.Application.Json)
-                    setBody(
-                        OpenRouterRequest(
-                            model = model,
-                            messages = listOf(
-                                OpenRouterMessage(
-                                    role = "user",
-                                    content = userPrompt
-                                )
-                            )
-                        )
-                    )
-                }.body()
-
-            println()
-
-            val answer = response.choices
-                .firstOrNull()
-                ?.message
-                ?.content
-                ?: "No content in response"
-
-            println()
-            println(answer)
-            println()
-        } catch (e: Exception) {
-            println("Error: ${e.message}")
-        }
-    }
+    runner.run(model, client, apiKey)
 
     client.close()
 }

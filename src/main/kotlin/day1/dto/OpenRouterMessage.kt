@@ -1,4 +1,4 @@
-package ru.ai_advent_app.dto
+package ru.ai_advent_app.day1.dto
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
