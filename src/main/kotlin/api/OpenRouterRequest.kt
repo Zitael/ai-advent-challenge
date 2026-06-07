@@ -9,5 +9,6 @@ data class OpenRouterRequest(
     val messages: List<OpenRouterMessage>,
     @JsonProperty("max_tokens")
     val maxTokens: Int? = null,
-    val stop: List<String>? = null
+    val stop: List<String>? = null,
+    val temperature: Double? = null
 )
