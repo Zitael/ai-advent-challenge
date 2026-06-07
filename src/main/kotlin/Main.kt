@@ -2,6 +2,7 @@ package ru.ai_advent_app.day1
 
 import day1.Day1
 import day2.Day2
+import day3.Day3
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -27,7 +28,7 @@ suspend fun main() {
         }
     }
 
-    val runner = Day2()
+    val runner = Day3()
 
     runner.run(model, client, apiKey)
 

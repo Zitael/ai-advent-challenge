@@ -9,7 +9,7 @@ class Day2 {
 
     suspend fun run(model: String, client: HttpClient, apiKey: String) {
 
-        val api = LLMApiClient()
+        val api = LLMApiClient(client, apiKey)
 
         println("AI Advent Challenge — Day 2")
         println("Model: $model")
@@ -22,7 +22,7 @@ class Day2 {
             val promptUnlimited = "Explain how MCP works"
 
             println("Case 1 - Unlimited, prompt: $promptUnlimited")
-            val resultUnlimited = api.send(client, prepareRequest(promptUnlimited, model), apiKey)
+            val resultUnlimited = api.send(prepareRequest(promptUnlimited, model))
 
             println()
             println(resultUnlimited)
@@ -34,7 +34,7 @@ class Day2 {
                     "                - Maximum 20 words"
 
             println("Case 2 - Limited by prompt, prompt: $promptLimited")
-            val resultLimited = api.send(client, prepareRequest(promptLimited, model), apiKey)
+            val resultLimited = api.send(prepareRequest(promptLimited, model))
 
             println()
             println(resultLimited)
@@ -45,9 +45,7 @@ class Day2 {
 
             println("Case 3 - Limited by api, prompt: $promptLimitedByApi")
             val resultLimitedByApi = api.send(
-                client,
-                prepareRequest(promptLimited, model, 1000, listOf("END")),
-                apiKey
+                prepareRequest(promptLimited, model, 1000, listOf("END"))
             )
 
             println()

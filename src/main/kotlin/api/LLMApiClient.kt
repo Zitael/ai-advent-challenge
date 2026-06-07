@@ -9,12 +9,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 
-class LLMApiClient {
+class LLMApiClient(val client: HttpClient, val apiKey: String) {
 
     suspend fun send(
-        client: HttpClient,
-        req: OpenRouterRequest,
-        apiKey: String
+        req: OpenRouterRequest
     ): String {
         val response: OpenRouterResponse = client.post("https://openrouter.ai/api/v1/chat/completions") {
             header(HttpHeaders.Authorization, "Bearer $apiKey")
