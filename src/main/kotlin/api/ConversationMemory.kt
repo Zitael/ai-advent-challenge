@@ -1,28 +1,27 @@
-package ru.ai_advent_app.day1.api
+package api
 
-import api.OpenRouterMessage
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import java.io.File
 
 class ConversationMemory(
-    private val filePath: String = "conversation-history.json"
+    private val filePath: String = "conversation-state.json"
 ) {
     private val objectMapper = jacksonObjectMapper()
     private val file = File(filePath)
 
-    fun load(): MutableList<OpenRouterMessage> {
+    fun load(): ConversationState {
         if (!file.exists()) {
-            return mutableListOf()
+            return ConversationState()
         }
 
         return objectMapper.readValue(file)
     }
 
-    fun save(messages: List<OpenRouterMessage>) {
+    fun save(state: ConversationState) {
         objectMapper
             .writerWithDefaultPrettyPrinter()
-            .writeValue(file, messages)
+            .writeValue(file, state)
     }
 
     fun clear() {

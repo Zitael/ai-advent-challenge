@@ -1,6 +1,6 @@
 package api
 
-import ru.ai_advent_app.day1.api.ConversationMemory
+import api.ConversationMemory
 
 class Agent(
     apiKey: String,
@@ -18,16 +18,15 @@ class Agent(
         """.trimIndent()
     )
 
-    private val messages: MutableList<OpenRouterMessage> = memory.load()
-        .ifEmpty {
-            mutableListOf(systemMessage)
-        }
+    private val messages: ConversationState = memory.load().apply {
+        this.messages.ifEmpty { this.messages = mutableListOf(systemMessage) }
+    }
 
     suspend fun callLLM(model: String, userPrompt: String): String {
-        messages.add(OpenRouterMessage("user", userPrompt))
+        messages.messages.add(OpenRouterMessage("user", userPrompt))
         println("Agent - called with $userPrompt")
 
-        val response = api.send(prepareRequest(messages, model))
+        val response = api.send(prepareRequest(messages.messages, model))
 
         println("Agent - got result: $response")
 
@@ -37,7 +36,7 @@ class Agent(
             ?.content
             ?: "No content in response"
 
-        messages.add(
+        messages.messages.add(
             OpenRouterMessage(
                 role = "assistant",
                 content = answer
@@ -50,8 +49,8 @@ class Agent(
     }
 
     fun clearMemory() {
-        messages.clear()
-        messages.add(systemMessage)
+        messages.messages.clear()
+        messages.messages.add(systemMessage)
         memory.save(messages)
     }
 

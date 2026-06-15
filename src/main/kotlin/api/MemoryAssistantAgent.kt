@@ -1,5 +1,7 @@
 package ru.ai_advent_app.day1.api
 
+import api.ConversationMemory
+import api.ConversationState
 import api.LLMApiClient
 import api.OpenRouterMessage
 import api.OpenRouterRequest
@@ -18,18 +20,19 @@ class MemoryAssistantAgent(
         content = "You are a helpful AI agent with persistent conversation memory."
     )
 
-    private val messages: MutableList<OpenRouterMessage> = memory.load()
-        .ifEmpty { mutableListOf(systemMessage) }
+    private val messages: ConversationState = memory.load().apply {
+        this.messages.ifEmpty { this.messages = mutableListOf(systemMessage) }
+    }
 
     suspend fun handle(userInput: String, model: String): String {
         val userMessage = OpenRouterMessage("user", userInput)
 
         val currentRequestTokens = tokenCounter.estimateTextTokens(userInput)
-        val historyTokensBefore = tokenCounter.estimateMessagesTokens(messages)
+        val historyTokensBefore = tokenCounter.estimateMessagesTokens(messages.messages)
 
-        messages.add(userMessage)
+        messages.messages.add(userMessage)
 
-        val response = llmClient.send(prepareRequest(messages, model))
+        val response = llmClient.send(prepareRequest(messages.messages, model))
         println("Agent got response: $response")
         val answer = response.choices
             .firstOrNull()
@@ -38,7 +41,7 @@ class MemoryAssistantAgent(
             ?: "No content in response"
 
         val assistantMessage = OpenRouterMessage("assistant", answer)
-        messages.add(assistantMessage)
+        messages.messages.add(assistantMessage)
         memory.save(messages)
 
         val responseTokens = tokenCounter.estimateTextTokens(answer)
@@ -59,13 +62,13 @@ class MemoryAssistantAgent(
     }
 
     fun printStats() {
-        println("Messages in memory: ${messages.size}")
-        println("Estimated history tokens: ${tokenCounter.estimateMessagesTokens(messages)}")
+        println("Messages in memory: ${messages.messages.size}")
+        println("Estimated history tokens: ${tokenCounter.estimateMessagesTokens(messages.messages)}")
     }
 
     fun addLongContext() {
         repeat(20) { index ->
-            messages.add(
+            messages.messages.add(
                 OpenRouterMessage(
                     role = "user",
                     content = "This is long context block number $index. " +
@@ -78,7 +81,7 @@ class MemoryAssistantAgent(
 
     fun addOverflowContext() {
         repeat(300) { index ->
-            messages.add(
+            messages.messages.add(
                 OpenRouterMessage(
                     role = "user",
                     content = "Overflow block $index. " +
@@ -106,8 +109,8 @@ class MemoryAssistantAgent(
     }
 
     fun clearMemory() {
-        messages.clear()
-        messages.add(systemMessage)
+        messages.messages.clear()
+        messages.messages.add(systemMessage)
         memory.save(messages)
     }
 }

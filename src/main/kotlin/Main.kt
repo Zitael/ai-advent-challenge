@@ -1,11 +1,11 @@
 package ru.ai_advent_app.day1
 
+import day9.Day9
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
-import ru.ai_advent_app.day1.day8.Day8
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -26,7 +26,7 @@ suspend fun main() {
         }
     }
 
-    val runner = Day8(apiKey)
+    val runner = Day9(apiKey)
 
     runner.run(model)
 
