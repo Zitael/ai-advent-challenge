@@ -6,6 +6,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
+import ru.ai_advent_app.day1.day7.Day7
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -26,7 +27,7 @@ suspend fun main() {
         }
     }
 
-    val runner = Day6(apiKey)
+    val runner = Day7(apiKey)
 
     runner.run(model)
 
