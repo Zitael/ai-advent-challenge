@@ -7,9 +7,9 @@ import api.OpenRouterRequest
 
 class Day2 {
 
-    suspend fun run(model: String, client: HttpClient, apiKey: String) {
+    suspend fun run(model: String, apiKey: String) {
 
-        val api = LLMApiClient(client, apiKey)
+        val api = LLMApiClient(apiKey)
 
         println("AI Advent Challenge — Day 2")
         println("Model: $model")

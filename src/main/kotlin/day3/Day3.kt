@@ -9,9 +9,9 @@ import ru.ai_advent_app.day1.day3.buildPrompt
 
 class Day3 {
 
-    suspend fun run(model: String, client: HttpClient, apiKey: String) {
+    suspend fun run(model: String, apiKey: String) {
 
-        val api = LLMApiClient(client, apiKey)
+        val api = LLMApiClient(apiKey)
 
         println("AI Advent Challenge — Day 3")
         println("Model: $model")
@@ -44,7 +44,11 @@ class Day3 {
                 $task
             """.trimIndent()
 
-            val generatedPrompt = api.send(prepareRequest(promptGenerationTask, model))
+            val generatedPrompt = api.send(prepareRequest(promptGenerationTask, model)).choices
+                .firstOrNull()
+                ?.message
+                ?.content
+                ?: "No content in response"
 
             val generatedPromptAnswer = api.send(
                 prepareRequest(

@@ -9,9 +9,9 @@ import ru.ai_advent_app.day1.day3.buildPrompt
 
 class Day4 {
 
-    suspend fun run(model: String, client: HttpClient, apiKey: String) {
+    suspend fun run(model: String, apiKey: String) {
 
-        val api = LLMApiClient(client, apiKey)
+        val api = LLMApiClient(apiKey)
 
         println("AI Advent Challenge — Day 4")
         println("Model: $model")
