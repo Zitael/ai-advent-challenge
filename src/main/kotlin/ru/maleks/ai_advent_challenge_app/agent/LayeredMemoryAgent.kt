@@ -36,7 +36,6 @@ class LayeredMemoryAgent(
         }
 
         val requestMessages = buildContext(userInput)
-
         val result = llmClient.complete(requestMessages)
 
         memory.shortTerm.add(OpenRouterMessage(role = "user", content = userInput))
@@ -126,8 +125,6 @@ class LayeredMemoryAgent(
     }
 
     private fun buildContext(userInput: String): List<OpenRouterMessage> {
-        val taskState = taskStateMachine.current()
-
         val result = mutableListOf<OpenRouterMessage>()
 
         result.add(
@@ -185,17 +182,7 @@ class LayeredMemoryAgent(
         result.add(
             OpenRouterMessage(
                 role = "system",
-                content = """
-                    Current task state:
-                    - stage: ${taskState.stage}
-                    - task description: ${taskState.taskDescription.ifBlank { "not set" }}
-                    - current step: ${taskState.currentStep}
-                    - expected action: ${taskState.expectedAction}
-                    - approved plan:
-                    ${taskState.approvedPlan.ifBlank { "not set" }}
-
-                    Follow the current task stage.
-                """.trimIndent()
+                content = taskStateMachine.formatForPrompt()
             )
         )
 

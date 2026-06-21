@@ -1,10 +1,10 @@
 package ru.maleks.ai_advent_challenge_app
 
 import io.github.cdimascio.dotenv.dotenv
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.jackson.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.jackson.jackson
 import ru.maleks.ai_advent_challenge_app.agent.LayeredMemoryAgent
 import ru.maleks.ai_advent_challenge_app.invariant.Invariant
 import ru.maleks.ai_advent_challenge_app.invariant.InvariantChecker
@@ -12,6 +12,7 @@ import ru.maleks.ai_advent_challenge_app.invariant.InvariantStorage
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
 import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
+import ru.maleks.ai_advent_challenge_app.state.TaskStage
 import ru.maleks.ai_advent_challenge_app.state.TaskStateMachine
 import ru.maleks.ai_advent_challenge_app.state.TaskStateStorage
 
@@ -59,7 +60,7 @@ suspend fun main() {
         invariantChecker = invariantChecker
     )
 
-    println("AI Advent Challenge — Day 14")
+    println("AI Advent Challenge — Day 15")
     println("Agent: ${agent.name}")
     println("Model: $model")
     println()
@@ -185,22 +186,29 @@ suspend fun main() {
             }
 
             input.equals("next", ignoreCase = true) -> {
-                val moved = taskStateMachine.next()
-                if (moved) {
-                    println("Moved to stage: ${taskStateMachine.current().stage}")
-                } else {
-                    println("Already at final stage: ${taskStateMachine.current().stage}")
-                }
+                val result = taskStateMachine.next()
+                println(result.message)
                 continue
             }
 
             input.equals("back", ignoreCase = true) -> {
-                val moved = taskStateMachine.back()
-                if (moved) {
-                    println("Moved back to stage: ${taskStateMachine.current().stage}")
+                val result = taskStateMachine.back()
+                println(result.message)
+                continue
+            }
+
+            input.startsWith("goto ", ignoreCase = true) -> {
+                val rawStage = input.removePrefixIgnoreCase("goto ").trim()
+                val targetStage = parseTaskStage(rawStage)
+
+                if (targetStage == null) {
+                    println("Unknown stage: $rawStage")
+                    println("Available stages: planning, execution, validation, done")
                 } else {
-                    println("Already at first stage: ${taskStateMachine.current().stage}")
+                    val result = taskStateMachine.transitionTo(targetStage)
+                    println(result.message)
                 }
+
                 continue
             }
 
@@ -267,6 +275,7 @@ private fun printHelp() {
     println("  plan <text>")
     println("  next")
     println("  back")
+    println("  goto <planning|execution|validation|done>")
     println("  reset-state")
     println("  invariants")
     println("  invariant <id>|<description>|<forbidden1,forbidden2>")
@@ -316,6 +325,16 @@ private fun parseInvariant(input: String): Invariant? {
         description = description,
         forbiddenKeywords = forbiddenKeywords
     )
+}
+
+private fun parseTaskStage(input: String): TaskStage? {
+    return when (input.lowercase()) {
+        "planning" -> TaskStage.PLANNING
+        "execution" -> TaskStage.EXECUTION
+        "validation" -> TaskStage.VALIDATION
+        "done" -> TaskStage.DONE
+        else -> null
+    }
 }
 
 private fun String.removePrefixIgnoreCase(prefix: String): String {
