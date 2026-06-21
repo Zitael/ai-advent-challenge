@@ -1,11 +1,13 @@
-package ru.maleks.ai_advent_challenge_app
+package ru.ai_advent_app
 
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
-import ru.maleks.ai_advent_challenge_app.archive.day10.Day10
+import ru.maleks.ai_advent_challenge_app.agent.LayeredMemoryAgent
+import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
+import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -20,15 +22,131 @@ suspend fun main() {
         ?: System.getenv("OPENROUTER_MODEL")
         ?: "openai/gpt-4o-mini"
 
-    val client = HttpClient(CIO) {
+    val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
             jackson()
         }
     }
 
-    val runner = Day10(apiKey)
+    val llmClient = OpenRouterClient(
+        httpClient = httpClient,
+        apiKey = apiKey,
+        model = model
+    )
 
-    runner.run(model)
+    val memoryStorage = AssistantMemoryStorage()
 
-    client.close()
+    val agent = LayeredMemoryAgent(
+        name = "LayeredMemoryAgent",
+        llmClient = llmClient,
+        memoryStorage = memoryStorage
+    )
+
+    println("AI Advent Challenge — Day 11")
+    println("Agent: ${agent.name}")
+    println("Model: $model")
+    println()
+    println("Commands:")
+    println("  memory")
+    println("  clear")
+    println("  remember short <text>")
+    println("  remember work <key>=<value>")
+    println("  remember long <key>=<value>")
+    println("  exit")
+    println()
+
+    while (true) {
+        print("You: ")
+        val input = readlnOrNull()?.trim()
+
+        if (input.isNullOrBlank()) {
+            continue
+        }
+
+        when {
+            input.equals("exit", ignoreCase = true) -> break
+
+            input.equals("memory", ignoreCase = true) -> {
+                agent.printMemory()
+                continue
+            }
+
+            input.equals("clear", ignoreCase = true) -> {
+                agent.clearMemory()
+                println("Memory cleared.")
+                continue
+            }
+
+            input.startsWith("remember short ", ignoreCase = true) -> {
+                val text = input.removePrefixIgnoreCase("remember short ").trim()
+                agent.rememberShort(text)
+                println("Saved to short-term memory.")
+                continue
+            }
+
+            input.startsWith("remember work ", ignoreCase = true) -> {
+                val pair = input.removePrefixIgnoreCase("remember work ").trim()
+                val parsed = parseKeyValue(pair)
+
+                if (parsed == null) {
+                    println("Invalid format. Use: remember work key=value")
+                } else {
+                    agent.rememberWorking(parsed.first, parsed.second)
+                    println("Saved to working memory.")
+                }
+
+                continue
+            }
+
+            input.startsWith("remember long ", ignoreCase = true) -> {
+                val pair = input.removePrefixIgnoreCase("remember long ").trim()
+                val parsed = parseKeyValue(pair)
+
+                if (parsed == null) {
+                    println("Invalid format. Use: remember long key=value")
+                } else {
+                    agent.rememberLongTerm(parsed.first, parsed.second)
+                    println("Saved to long-term memory.")
+                }
+
+                continue
+            }
+        }
+
+        try {
+            val response = agent.handle(input)
+            println()
+            println("${agent.name}:")
+            println(response)
+            println()
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
+        }
+    }
+
+    httpClient.close()
+}
+
+private fun parseKeyValue(input: String): Pair<String, String>? {
+    if (!input.contains("=")) {
+        return null
+    }
+
+    val parts = input.split("=", limit = 2)
+    val key = parts[0].trim()
+    val value = parts[1].trim()
+
+    if (key.isBlank() || value.isBlank()) {
+        return null
+    }
+
+    return key to value
+}
+
+private fun String.removePrefixIgnoreCase(prefix: String): String {
+    return if (startsWith(prefix, ignoreCase = true)) {
+        substring(prefix.length)
+    } else {
+        this
+    }
 }

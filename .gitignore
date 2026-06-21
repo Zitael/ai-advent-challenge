@@ -45,3 +45,4 @@ bin/
 .env
 conversation-history.json
 conversation-state.json
+assistant-memory.json
