@@ -1,4 +1,4 @@
-package ru.ai_advent_app
+package ru.maleks.ai_advent_challenge_app
 
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
@@ -8,6 +8,7 @@ import io.ktor.serialization.jackson.*
 import ru.maleks.ai_advent_challenge_app.agent.LayeredMemoryAgent
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
+import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -35,20 +36,27 @@ suspend fun main() {
     )
 
     val memoryStorage = AssistantMemoryStorage()
+    val profileStorage = UserProfileStorage()
+
+    val profiles = profileStorage.loadProfiles()
+    var activeProfile = profiles["backend"] ?: profiles.values.first()
 
     val agent = LayeredMemoryAgent(
         name = "LayeredMemoryAgent",
         llmClient = llmClient,
-        memoryStorage = memoryStorage
+        memoryStorage = memoryStorage,
+        userProfile = activeProfile
     )
 
-    println("AI Advent Challenge — Day 11")
+    println("AI Advent Challenge — Day 12")
     println("Agent: ${agent.name}")
     println("Model: $model")
     println()
     println("Commands:")
     println("  memory")
     println("  clear")
+    println("  profiles")
+    println("  profile <id>")
     println("  remember short <text>")
     println("  remember work <key>=<value>")
     println("  remember long <key>=<value>")
@@ -74,6 +82,30 @@ suspend fun main() {
             input.equals("clear", ignoreCase = true) -> {
                 agent.clearMemory()
                 println("Memory cleared.")
+                continue
+            }
+
+            input.equals("profiles", ignoreCase = true) -> {
+                println("Available profiles:")
+                profiles.values.forEach { profile ->
+                    val marker = if (profile.id == activeProfile.id) "*" else " "
+                    println("$marker ${profile.id} — ${profile.name}")
+                }
+                continue
+            }
+
+            input.startsWith("profile ", ignoreCase = true) -> {
+                val profileId = input.removePrefixIgnoreCase("profile ").trim()
+                val profile = profiles[profileId]
+
+                if (profile == null) {
+                    println("Profile not found: $profileId")
+                } else {
+                    activeProfile = profile
+                    agent.setUserProfile(profile)
+                    println("Active profile: ${profile.id} — ${profile.name}")
+                }
+
                 continue
             }
 

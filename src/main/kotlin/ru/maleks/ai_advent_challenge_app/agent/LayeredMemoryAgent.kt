@@ -4,12 +4,13 @@ import ru.maleks.ai_advent_challenge_app.llm.LlmClient
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterMessage
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemory
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
-
+import ru.maleks.ai_advent_challenge_app.profile.UserProfile
 
 class LayeredMemoryAgent(
     override val name: String,
     private val llmClient: LlmClient,
     private val memoryStorage: AssistantMemoryStorage,
+    private var userProfile: UserProfile,
     private val keepLastShortTermMessages: Int = 8
 ) : Agent {
 
@@ -39,6 +40,7 @@ class LayeredMemoryAgent(
 
         println()
         println("----- MEMORY STATS -----")
+        println("Active profile: ${userProfile.id} — ${userProfile.name}")
         println("Short-term messages: ${memory.shortTerm.size}")
         println("Working memory items: ${memory.working.size}")
         println("Long-term memory items: ${memory.longTerm.size}")
@@ -50,6 +52,10 @@ class LayeredMemoryAgent(
         println()
 
         return result.answer
+    }
+
+    fun setUserProfile(profile: UserProfile) {
+        userProfile = profile
     }
 
     fun rememberShort(text: String) {
@@ -74,6 +80,16 @@ class LayeredMemoryAgent(
     }
 
     fun printMemory() {
+        println()
+        println("========== ACTIVE PROFILE ==========")
+        println("- id: ${userProfile.id}")
+        println("- name: ${userProfile.name}")
+        println("- style: ${userProfile.style}")
+        println("- format: ${userProfile.format}")
+        println("- context: ${userProfile.context}")
+        println("- constraints:")
+        userProfile.constraints.forEach { println("  - $it") }
+
         println()
         println("========== MEMORY ==========")
 
@@ -112,17 +128,36 @@ class LayeredMemoryAgent(
             OpenRouterMessage(
                 role = "system",
                 content = """
-                    You are a stateful AI assistant with explicit layered memory.
+                    You are a stateful AI assistant with explicit layered memory and user personalization.
 
                     Memory layers:
                     1. Short-term memory — recent dialogue.
                     2. Working memory — current task data, goals, constraints, decisions.
                     3. Long-term memory — stable user profile, preferences, stack and reusable knowledge.
 
-                    Use long-term memory for stable personalization.
+                    Use active user profile for personalization.
+                    Use long-term memory for stable context.
                     Use working memory for the current task.
-                    Use short-term memory for recent dialogue context.
+                    Use short-term memory for recent dialogue.
                     Do not invent memory facts that were not provided.
+                """.trimIndent()
+            )
+        )
+
+        result.add(
+            OpenRouterMessage(
+                role = "system",
+                content = """
+                    Active user profile:
+                    - id: ${userProfile.id}
+                    - name: ${userProfile.name}
+                    - style: ${userProfile.style}
+                    - response format: ${userProfile.format}
+                    - context: ${userProfile.context}
+                    - constraints:
+                    ${userProfile.constraints.joinToString("\n") { "  - $it" }}
+
+                    Adapt every answer to this profile automatically.
                 """.trimIndent()
             )
         )

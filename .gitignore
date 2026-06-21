@@ -46,3 +46,4 @@ bin/
 conversation-history.json
 conversation-state.json
 assistant-memory.json
+user-profiles.json
