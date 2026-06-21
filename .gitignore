@@ -43,3 +43,5 @@ bin/
 
 #custom
 .env
+conversation-history.json
+conversation-state.json
