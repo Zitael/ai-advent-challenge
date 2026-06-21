@@ -5,12 +5,14 @@ import ru.maleks.ai_advent_challenge_app.llm.OpenRouterMessage
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemory
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
 import ru.maleks.ai_advent_challenge_app.profile.UserProfile
+import ru.maleks.ai_advent_challenge_app.state.TaskStateMachine
 
 class LayeredMemoryAgent(
     override val name: String,
     private val llmClient: LlmClient,
     private val memoryStorage: AssistantMemoryStorage,
     private var userProfile: UserProfile,
+    private val taskStateMachine: TaskStateMachine,
     private val keepLastShortTermMessages: Int = 8
 ) : Agent {
 
@@ -39,8 +41,9 @@ class LayeredMemoryAgent(
         memoryStorage.save(memory)
 
         println()
-        println("----- MEMORY STATS -----")
+        println("----- AGENT STATS -----")
         println("Active profile: ${userProfile.id} — ${userProfile.name}")
+        println("Task stage: ${taskStateMachine.current().stage}")
         println("Short-term messages: ${memory.shortTerm.size}")
         println("Working memory items: ${memory.working.size}")
         println("Long-term memory items: ${memory.longTerm.size}")
@@ -48,7 +51,7 @@ class LayeredMemoryAgent(
         println("API completion tokens: ${result.usage?.completionTokens}")
         println("API total tokens: ${result.usage?.totalTokens}")
         println("API cost: ${result.usage?.cost}")
-        println("------------------------")
+        println("-----------------------")
         println()
 
         return result.answer
@@ -122,24 +125,35 @@ class LayeredMemoryAgent(
     }
 
     private fun buildContext(userInput: String): List<OpenRouterMessage> {
+        val taskState = taskStateMachine.current()
+
         val result = mutableListOf<OpenRouterMessage>()
 
         result.add(
             OpenRouterMessage(
                 role = "system",
                 content = """
-                    You are a stateful AI assistant with explicit layered memory and user personalization.
+                    You are a stateful AI assistant with explicit layered memory, user personalization and task state machine.
 
                     Memory layers:
                     1. Short-term memory — recent dialogue.
                     2. Working memory — current task data, goals, constraints, decisions.
                     3. Long-term memory — stable user profile, preferences, stack and reusable knowledge.
 
-                    Use active user profile for personalization.
-                    Use long-term memory for stable context.
-                    Use working memory for the current task.
-                    Use short-term memory for recent dialogue.
-                    Do not invent memory facts that were not provided.
+                    Task state machine:
+                    - PLANNING: clarify task and create a plan.
+                    - EXECUTION: perform the approved plan.
+                    - VALIDATION: check result and find issues.
+                    - DONE: summarize completed work.
+
+                    Rules:
+                    - Use active user profile for personalization.
+                    - Use long-term memory for stable context.
+                    - Use working memory for the current task.
+                    - Use short-term memory for recent dialogue.
+                    - Use task state to decide what kind of answer is expected now.
+                    - Do not jump to another task stage unless user explicitly changes it.
+                    - Do not invent memory facts that were not provided.
                 """.trimIndent()
             )
         )
@@ -158,6 +172,23 @@ class LayeredMemoryAgent(
                     ${userProfile.constraints.joinToString("\n") { "  - $it" }}
 
                     Adapt every answer to this profile automatically.
+                """.trimIndent()
+            )
+        )
+
+        result.add(
+            OpenRouterMessage(
+                role = "system",
+                content = """
+                    Current task state:
+                    - stage: ${taskState.stage}
+                    - task description: ${taskState.taskDescription.ifBlank { "not set" }}
+                    - current step: ${taskState.currentStep}
+                    - expected action: ${taskState.expectedAction}
+                    - approved plan:
+                    ${taskState.approvedPlan.ifBlank { "not set" }}
+
+                    Follow the current task stage.
                 """.trimIndent()
             )
         )

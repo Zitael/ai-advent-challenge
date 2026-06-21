@@ -9,6 +9,8 @@ import ru.maleks.ai_advent_challenge_app.agent.LayeredMemoryAgent
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
 import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
+import ru.maleks.ai_advent_challenge_app.state.TaskStateMachine
+import ru.maleks.ai_advent_challenge_app.state.TaskStateStorage
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -37,6 +39,8 @@ suspend fun main() {
 
     val memoryStorage = AssistantMemoryStorage()
     val profileStorage = UserProfileStorage()
+    val taskStateStorage = TaskStateStorage()
+    val taskStateMachine = TaskStateMachine(taskStateStorage)
 
     val profiles = profileStorage.loadProfiles()
     var activeProfile = profiles["backend"] ?: profiles.values.first()
@@ -45,10 +49,11 @@ suspend fun main() {
         name = "LayeredMemoryAgent",
         llmClient = llmClient,
         memoryStorage = memoryStorage,
-        userProfile = activeProfile
+        userProfile = activeProfile,
+        taskStateMachine = taskStateMachine
     )
 
-    println("AI Advent Challenge — Day 12")
+    println("AI Advent Challenge — Day 13")
     println("Agent: ${agent.name}")
     println("Model: $model")
     println()
@@ -60,6 +65,14 @@ suspend fun main() {
     println("  remember short <text>")
     println("  remember work <key>=<value>")
     println("  remember long <key>=<value>")
+    println("  state")
+    println("  task <description>")
+    println("  step <text>")
+    println("  expect <text>")
+    println("  plan <text>")
+    println("  next")
+    println("  back")
+    println("  reset-state")
     println("  exit")
     println()
 
@@ -141,6 +154,65 @@ suspend fun main() {
                     println("Saved to long-term memory.")
                 }
 
+                continue
+            }
+
+            input.equals("state", ignoreCase = true) -> {
+                taskStateMachine.printState()
+                continue
+            }
+
+            input.startsWith("task ", ignoreCase = true) -> {
+                val description = input.removePrefixIgnoreCase("task ").trim()
+                taskStateMachine.setTask(description)
+                println("Task description saved. Stage: PLANNING")
+                continue
+            }
+
+            input.startsWith("step ", ignoreCase = true) -> {
+                val step = input.removePrefixIgnoreCase("step ").trim()
+                taskStateMachine.setCurrentStep(step)
+                println("Current step saved.")
+                continue
+            }
+
+            input.startsWith("expect ", ignoreCase = true) -> {
+                val action = input.removePrefixIgnoreCase("expect ").trim()
+                taskStateMachine.setExpectedAction(action)
+                println("Expected action saved.")
+                continue
+            }
+
+            input.startsWith("plan ", ignoreCase = true) -> {
+                val plan = input.removePrefixIgnoreCase("plan ").trim()
+                taskStateMachine.setApprovedPlan(plan)
+                println("Approved plan saved.")
+                continue
+            }
+
+            input.equals("next", ignoreCase = true) -> {
+                val moved = taskStateMachine.next()
+                if (moved) {
+                    println("Moved to stage: ${taskStateMachine.current().stage}")
+                } else {
+                    println("Already at final stage: ${taskStateMachine.current().stage}")
+                }
+                continue
+            }
+
+            input.equals("back", ignoreCase = true) -> {
+                val moved = taskStateMachine.back()
+                if (moved) {
+                    println("Moved back to stage: ${taskStateMachine.current().stage}")
+                } else {
+                    println("Already at first stage: ${taskStateMachine.current().stage}")
+                }
+                continue
+            }
+
+            input.equals("reset-state", ignoreCase = true) -> {
+                taskStateMachine.reset()
+                println("Task state reset.")
                 continue
             }
         }
