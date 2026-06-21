@@ -6,6 +6,9 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.serialization.jackson.*
 import ru.maleks.ai_advent_challenge_app.agent.LayeredMemoryAgent
+import ru.maleks.ai_advent_challenge_app.invariant.Invariant
+import ru.maleks.ai_advent_challenge_app.invariant.InvariantChecker
+import ru.maleks.ai_advent_challenge_app.invariant.InvariantStorage
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
 import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
@@ -41,6 +44,8 @@ suspend fun main() {
     val profileStorage = UserProfileStorage()
     val taskStateStorage = TaskStateStorage()
     val taskStateMachine = TaskStateMachine(taskStateStorage)
+    val invariantStorage = InvariantStorage()
+    val invariantChecker = InvariantChecker(invariantStorage)
 
     val profiles = profileStorage.loadProfiles()
     var activeProfile = profiles["backend"] ?: profiles.values.first()
@@ -50,31 +55,15 @@ suspend fun main() {
         llmClient = llmClient,
         memoryStorage = memoryStorage,
         userProfile = activeProfile,
-        taskStateMachine = taskStateMachine
+        taskStateMachine = taskStateMachine,
+        invariantChecker = invariantChecker
     )
 
-    println("AI Advent Challenge — Day 13")
+    println("AI Advent Challenge — Day 14")
     println("Agent: ${agent.name}")
     println("Model: $model")
     println()
-    println("Commands:")
-    println("  memory")
-    println("  clear")
-    println("  profiles")
-    println("  profile <id>")
-    println("  remember short <text>")
-    println("  remember work <key>=<value>")
-    println("  remember long <key>=<value>")
-    println("  state")
-    println("  task <description>")
-    println("  step <text>")
-    println("  expect <text>")
-    println("  plan <text>")
-    println("  next")
-    println("  back")
-    println("  reset-state")
-    println("  exit")
-    println()
+    printHelp()
 
     while (true) {
         print("You: ")
@@ -86,6 +75,11 @@ suspend fun main() {
 
         when {
             input.equals("exit", ignoreCase = true) -> break
+
+            input.equals("help", ignoreCase = true) -> {
+                printHelp()
+                continue
+            }
 
             input.equals("memory", ignoreCase = true) -> {
                 agent.printMemory()
@@ -215,6 +209,31 @@ suspend fun main() {
                 println("Task state reset.")
                 continue
             }
+
+            input.equals("invariants", ignoreCase = true) -> {
+                invariantChecker.printInvariants()
+                continue
+            }
+
+            input.startsWith("invariant ", ignoreCase = true) -> {
+                val raw = input.removePrefixIgnoreCase("invariant ").trim()
+                val parsed = parseInvariant(raw)
+
+                if (parsed == null) {
+                    println("Invalid format. Use: invariant <id>|<description>|<forbidden1,forbidden2>")
+                } else {
+                    invariantChecker.add(parsed)
+                    println("Invariant saved: ${parsed.id}")
+                }
+
+                continue
+            }
+
+            input.equals("clear-invariants", ignoreCase = true) -> {
+                invariantChecker.clear()
+                println("Invariants cleared.")
+                continue
+            }
         }
 
         try {
@@ -231,6 +250,31 @@ suspend fun main() {
     httpClient.close()
 }
 
+private fun printHelp() {
+    println("Commands:")
+    println("  help")
+    println("  memory")
+    println("  clear")
+    println("  profiles")
+    println("  profile <id>")
+    println("  remember short <text>")
+    println("  remember work <key>=<value>")
+    println("  remember long <key>=<value>")
+    println("  state")
+    println("  task <description>")
+    println("  step <text>")
+    println("  expect <text>")
+    println("  plan <text>")
+    println("  next")
+    println("  back")
+    println("  reset-state")
+    println("  invariants")
+    println("  invariant <id>|<description>|<forbidden1,forbidden2>")
+    println("  clear-invariants")
+    println("  exit")
+    println()
+}
+
 private fun parseKeyValue(input: String): Pair<String, String>? {
     if (!input.contains("=")) {
         return null
@@ -245,6 +289,33 @@ private fun parseKeyValue(input: String): Pair<String, String>? {
     }
 
     return key to value
+}
+
+private fun parseInvariant(input: String): Invariant? {
+    val parts = input.split("|", limit = 3)
+
+    if (parts.size < 2) {
+        return null
+    }
+
+    val id = parts[0].trim()
+    val description = parts[1].trim()
+    val forbiddenKeywords = parts
+        .getOrNull(2)
+        ?.split(",")
+        ?.map { it.trim() }
+        ?.filter { it.isNotBlank() }
+        ?: emptyList()
+
+    if (id.isBlank() || description.isBlank()) {
+        return null
+    }
+
+    return Invariant(
+        id = id,
+        description = description,
+        forbiddenKeywords = forbiddenKeywords
+    )
 }
 
 private fun String.removePrefixIgnoreCase(prefix: String): String {

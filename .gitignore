@@ -48,3 +48,4 @@ conversation-state.json
 assistant-memory.json
 user-profiles.json
 task-state.json
+invariants.json

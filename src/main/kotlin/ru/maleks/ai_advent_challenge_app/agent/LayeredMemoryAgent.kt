@@ -1,5 +1,7 @@
 package ru.maleks.ai_advent_challenge_app.agent
 
+import ru.maleks.ai_advent_challenge_app.invariant.InvariantChecker
+import ru.maleks.ai_advent_challenge_app.invariant.InvariantViolation
 import ru.maleks.ai_advent_challenge_app.llm.LlmClient
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterMessage
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemory
@@ -13,29 +15,32 @@ class LayeredMemoryAgent(
     private val memoryStorage: AssistantMemoryStorage,
     private var userProfile: UserProfile,
     private val taskStateMachine: TaskStateMachine,
+    private val invariantChecker: InvariantChecker,
     private val keepLastShortTermMessages: Int = 8
 ) : Agent {
 
     private var memory: AssistantMemory = memoryStorage.load()
 
     override suspend fun handle(userInput: String): String {
+        val violations = invariantChecker.check(userInput)
+
+        if (violations.isNotEmpty()) {
+            val refusal = buildInvariantRefusal(violations)
+
+            memory.shortTerm.add(OpenRouterMessage(role = "user", content = userInput))
+            memory.shortTerm.add(OpenRouterMessage(role = "assistant", content = refusal))
+            trimShortTerm()
+            memoryStorage.save(memory)
+
+            return refusal
+        }
+
         val requestMessages = buildContext(userInput)
 
         val result = llmClient.complete(requestMessages)
 
-        memory.shortTerm.add(
-            OpenRouterMessage(
-                role = "user",
-                content = userInput
-            )
-        )
-
-        memory.shortTerm.add(
-            OpenRouterMessage(
-                role = "assistant",
-                content = result.answer
-            )
-        )
+        memory.shortTerm.add(OpenRouterMessage(role = "user", content = userInput))
+        memory.shortTerm.add(OpenRouterMessage(role = "assistant", content = result.answer))
 
         trimShortTerm()
         memoryStorage.save(memory)
@@ -44,6 +49,7 @@ class LayeredMemoryAgent(
         println("----- AGENT STATS -----")
         println("Active profile: ${userProfile.id} — ${userProfile.name}")
         println("Task stage: ${taskStateMachine.current().stage}")
+        println("Invariants: ${invariantChecker.getAll().size}")
         println("Short-term messages: ${memory.shortTerm.size}")
         println("Working memory items: ${memory.working.size}")
         println("Long-term memory items: ${memory.longTerm.size}")
@@ -62,12 +68,7 @@ class LayeredMemoryAgent(
     }
 
     fun rememberShort(text: String) {
-        memory.shortTerm.add(
-            OpenRouterMessage(
-                role = "user",
-                content = text
-            )
-        )
+        memory.shortTerm.add(OpenRouterMessage(role = "user", content = text))
         trimShortTerm()
         memoryStorage.save(memory)
     }
@@ -133,7 +134,7 @@ class LayeredMemoryAgent(
             OpenRouterMessage(
                 role = "system",
                 content = """
-                    You are a stateful AI assistant with explicit layered memory, user personalization and task state machine.
+                    You are a stateful AI assistant with explicit layered memory, user personalization, task state machine and invariants.
 
                     Memory layers:
                     1. Short-term memory — recent dialogue.
@@ -146,7 +147,12 @@ class LayeredMemoryAgent(
                     - VALIDATION: check result and find issues.
                     - DONE: summarize completed work.
 
-                    Rules:
+                    Invariant rules:
+                    - Invariants are hard constraints.
+                    - Never propose solutions that violate invariants.
+                    - If the user asks for something that conflicts with invariants, refuse briefly and suggest an allowed alternative.
+
+                    General rules:
                     - Use active user profile for personalization.
                     - Use long-term memory for stable context.
                     - Use working memory for the current task.
@@ -193,6 +199,18 @@ class LayeredMemoryAgent(
             )
         )
 
+        result.add(
+            OpenRouterMessage(
+                role = "system",
+                content = """
+                    Project invariants:
+                    ${invariantChecker.formatForPrompt()}
+
+                    These invariants must not be violated.
+                """.trimIndent()
+            )
+        )
+
         if (memory.longTerm.isNotEmpty()) {
             result.add(
                 OpenRouterMessage(
@@ -227,14 +245,26 @@ class LayeredMemoryAgent(
             result.addAll(memory.shortTerm.takeLast(keepLastShortTermMessages))
         }
 
-        result.add(
-            OpenRouterMessage(
-                role = "user",
-                content = userInput
-            )
-        )
+        result.add(OpenRouterMessage(role = "user", content = userInput))
 
         return result
+    }
+
+    private fun buildInvariantRefusal(violations: List<InvariantViolation>): String {
+        val details = violations.joinToString("\n") { violation ->
+            """
+            - ${violation.invariantId}: ${violation.invariantDescription}
+              matched forbidden keywords: ${violation.matchedKeywords.joinToString(", ")}
+            """.trimIndent()
+        }
+
+        return """
+            I cannot follow this request because it violates configured invariants:
+
+            $details
+
+            Please reformulate the request within the accepted architecture, stack and project constraints.
+        """.trimIndent()
     }
 
     private fun trimShortTerm() {
