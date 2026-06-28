@@ -50,3 +50,4 @@ user-profiles.json
 task-state.json
 invariants.json
 task-summary.json
+mcp-pipeline-output/

@@ -23,6 +23,7 @@ import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
 import ru.maleks.ai_advent_challenge_app.state.TaskStage
 import ru.maleks.ai_advent_challenge_app.state.TaskStateMachine
 import ru.maleks.ai_advent_challenge_app.state.TaskStateStorage
+import java.time.Instant
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -98,7 +99,7 @@ suspend fun main() {
         invariantChecker = invariantChecker
     )
 
-    println("AI Advent Challenge — Day 18")
+    println("AI Advent Challenge — Day 19")
     println("Agent: ${agent.name}")
     println("Model: $model")
     println("Public MCP server: ${publicMcpServerUrl ?: "not configured"}")
@@ -344,9 +345,7 @@ suspend fun main() {
 
                         val toolResult = mcpClient.callTool(
                             name = "get_mock_task",
-                            arguments = mapOf(
-                                "taskId" to taskId
-                            )
+                            arguments = mapOf("taskId" to taskId)
                         )
 
                         println()
@@ -404,9 +403,7 @@ suspend fun main() {
 
                         val toolResult = mcpClient.callTool(
                             name = "get_periodic_task_summary",
-                            arguments = mapOf(
-                                "limit" to 5
-                            )
+                            arguments = mapOf("limit" to 5)
                         )
 
                         println()
@@ -432,6 +429,87 @@ suspend fun main() {
                         println()
                     } catch (e: Exception) {
                         println("MCP summary call failed: ${e.message}")
+                    }
+
+                    continue
+                }
+
+                input.startsWith("mcp-pipeline ", ignoreCase = true) -> {
+                    val query = input.removePrefixIgnoreCase("mcp-pipeline ").trim()
+
+                    if (query.isBlank()) {
+                        println("Usage: mcp-pipeline <query>")
+                        continue
+                    }
+
+                    try {
+                        val mcpClient = RemoteMcpClient(
+                            config = McpServerConfig(
+                                url = localMcpServerRunner.url()
+                            )
+                        )
+
+                        println()
+                        println("========== MCP PIPELINE START ==========")
+
+                        println("Step 1: search_mock_tasks")
+                        val searchResult = mcpClient.callTool(
+                            name = "search_mock_tasks",
+                            arguments = mapOf("query" to query)
+                        )
+                        println(searchResult.text)
+                        println()
+
+                        println("Step 2: summarize_tasks")
+                        val summaryResult = mcpClient.callTool(
+                            name = "summarize_tasks",
+                            arguments = mapOf("tasksText" to searchResult.text)
+                        )
+                        println(summaryResult.text)
+                        println()
+
+                        println("Step 3: save_text_to_file")
+                        val fileName = "task-pipeline-${Instant.now().toEpochMilli()}.txt"
+                        val saveResult = mcpClient.callTool(
+                            name = "save_text_to_file",
+                            arguments = mapOf(
+                                "fileName" to fileName,
+                                "content" to summaryResult.text
+                            )
+                        )
+                        println(saveResult.text)
+
+                        println("=========== MCP PIPELINE END ===========")
+                        println()
+
+                        val agentPrompt = """
+                            A multi-tool MCP pipeline was executed.
+
+                            Pipeline:
+                            1. search_mock_tasks
+                            2. summarize_tasks
+                            3. save_text_to_file
+
+                            Search query:
+                            $query
+
+                            Final pipeline summary:
+                            ${summaryResult.text}
+
+                            Save result:
+                            ${saveResult.text}
+
+                            Explain what happened and what the user should do next.
+                        """.trimIndent()
+
+                        val response = agent.handle(agentPrompt)
+
+                        println()
+                        println("${agent.name}:")
+                        println(response)
+                        println()
+                    } catch (e: Exception) {
+                        println("MCP pipeline failed: ${e.message}")
                     }
 
                     continue
@@ -483,6 +561,7 @@ private fun printHelp() {
     println("  scheduler-now")
     println("  scheduler-summary")
     println("  mcp-summary")
+    println("  mcp-pipeline <query>")
     println("  exit")
     println()
 }
