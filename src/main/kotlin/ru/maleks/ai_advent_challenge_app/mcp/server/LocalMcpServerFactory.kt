@@ -17,6 +17,7 @@ import java.io.File
 import java.time.Instant
 
 class LocalMcpServerFactory(
+    private val config: LocalMcpServerConfig,
     private val mockTaskApi: MockTaskApi,
     private val taskSummaryScheduler: TaskSummaryScheduler
 ) {
@@ -24,7 +25,7 @@ class LocalMcpServerFactory(
     fun create(): Server {
         val server = Server(
             serverInfo = Implementation(
-                name = "ai-advent-local-mcp-server",
+                name = "ai-advent-${config.kind.name.lowercase()}-mcp-server",
                 version = "1.0.0"
             ),
             options = ServerOptions(
@@ -34,6 +35,15 @@ class LocalMcpServerFactory(
             )
         )
 
+        when (config.kind) {
+            LocalMcpServerKind.TRACKER -> registerTrackerTools(server)
+            LocalMcpServerKind.REPORT -> registerReportTools(server)
+        }
+
+        return server
+    }
+
+    private fun registerTrackerTools(server: Server) {
         server.addTool(
             name = "get_mock_task",
             description = "Get mock tracker task by task id. Example ids: AIA-1, AIA-2, AIA-3.",
@@ -59,22 +69,6 @@ class LocalMcpServerFactory(
             }
 
             textResult(formatTask(task))
-        }
-
-        server.addTool(
-            name = "get_periodic_task_summary",
-            description = "Return aggregated result collected periodically by background scheduler.",
-            inputSchema = ToolSchema(
-                properties = buildJsonObject {
-                    put("limit", numberProperty("Number of recent scheduler snapshots to return. Default is 5."))
-                },
-                required = emptyList()
-            )
-        ) { request ->
-            val limit = request.params.arguments?.readInt("limit") ?: 5
-            val safeLimit = limit.coerceIn(1, 20)
-
-            textResult(taskSummaryScheduler.getAggregatedSummary(safeLimit))
         }
 
         server.addTool(
@@ -125,6 +119,24 @@ class LocalMcpServerFactory(
             }
         }
 
+        server.addTool(
+            name = "get_periodic_task_summary",
+            description = "Return aggregated result collected periodically by background scheduler.",
+            inputSchema = ToolSchema(
+                properties = buildJsonObject {
+                    put("limit", numberProperty("Number of recent scheduler snapshots to return. Default is 5."))
+                },
+                required = emptyList()
+            )
+        ) { request ->
+            val limit = request.params.arguments?.readInt("limit") ?: 5
+            val safeLimit = limit.coerceIn(1, 20)
+
+            textResult(taskSummaryScheduler.getAggregatedSummary(safeLimit))
+        }
+    }
+
+    private fun registerReportTools(server: Server) {
         server.addTool(
             name = "summarize_tasks",
             description = "Summarize task search result text into a concise status report.",
@@ -225,8 +237,6 @@ class LocalMcpServerFactory(
                 """.trimIndent()
             )
         }
-
-        return server
     }
 
     private fun Map<String, JsonElement>.readString(key: String): String {

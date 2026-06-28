@@ -13,8 +13,13 @@ import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
 import ru.maleks.ai_advent_challenge_app.mcp.client.McpServerConfig
 import ru.maleks.ai_advent_challenge_app.mcp.client.McpToolPrinter
 import ru.maleks.ai_advent_challenge_app.mcp.client.RemoteMcpClient
+import ru.maleks.ai_advent_challenge_app.mcp.orchestration.McpOrchestrator
+import ru.maleks.ai_advent_challenge_app.mcp.orchestration.McpServerRef
+import ru.maleks.ai_advent_challenge_app.mcp.orchestration.McpToolRoute
+import ru.maleks.ai_advent_challenge_app.mcp.orchestration.McpToolRouter
 import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerConfig
 import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerFactory
+import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerKind
 import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerRunner
 import ru.maleks.ai_advent_challenge_app.mcp.server.MockTaskApi
 import ru.maleks.ai_advent_challenge_app.mcp.server.scheduler.TaskSummaryScheduler
@@ -23,7 +28,6 @@ import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
 import ru.maleks.ai_advent_challenge_app.state.TaskStage
 import ru.maleks.ai_advent_challenge_app.state.TaskStateMachine
 import ru.maleks.ai_advent_challenge_app.state.TaskStateStorage
-import java.time.Instant
 
 suspend fun main() {
     val dotenv = dotenv {
@@ -50,23 +54,84 @@ suspend fun main() {
 
     taskSummaryScheduler.start()
 
-    val localMcpConfig = LocalMcpServerConfig(
+    val trackerConfig = LocalMcpServerConfig(
+        kind = LocalMcpServerKind.TRACKER,
         host = "127.0.0.1",
         port = 3000,
         path = "/mcp"
     )
 
-    val localMcpServerFactory = LocalMcpServerFactory(
-        mockTaskApi = mockTaskApi,
-        taskSummaryScheduler = taskSummaryScheduler
+    val reportConfig = LocalMcpServerConfig(
+        kind = LocalMcpServerKind.REPORT,
+        host = "127.0.0.1",
+        port = 3001,
+        path = "/mcp"
     )
 
-    val localMcpServerRunner = LocalMcpServerRunner(
-        config = localMcpConfig,
-        factory = localMcpServerFactory
+    val trackerServerRunner = LocalMcpServerRunner(
+        config = trackerConfig,
+        factory = LocalMcpServerFactory(
+            config = trackerConfig,
+            mockTaskApi = mockTaskApi,
+            taskSummaryScheduler = taskSummaryScheduler
+        )
     )
 
-    localMcpServerRunner.start()
+    val reportServerRunner = LocalMcpServerRunner(
+        config = reportConfig,
+        factory = LocalMcpServerFactory(
+            config = reportConfig,
+            mockTaskApi = mockTaskApi,
+            taskSummaryScheduler = taskSummaryScheduler
+        )
+    )
+
+    trackerServerRunner.start()
+    reportServerRunner.start()
+
+    val mcpToolRouter = McpToolRouter(
+        servers = listOf(
+            McpServerRef(
+                name = "tracker",
+                url = trackerServerRunner.url()
+            ),
+            McpServerRef(
+                name = "report",
+                url = reportServerRunner.url()
+            )
+        ),
+        routes = listOf(
+            McpToolRoute(
+                toolName = "get_mock_task",
+                serverName = "tracker",
+                serverUrl = trackerServerRunner.url()
+            ),
+            McpToolRoute(
+                toolName = "search_mock_tasks",
+                serverName = "tracker",
+                serverUrl = trackerServerRunner.url()
+            ),
+            McpToolRoute(
+                toolName = "get_periodic_task_summary",
+                serverName = "tracker",
+                serverUrl = trackerServerRunner.url()
+            ),
+            McpToolRoute(
+                toolName = "summarize_tasks",
+                serverName = "report",
+                serverUrl = reportServerRunner.url()
+            ),
+            McpToolRoute(
+                toolName = "save_text_to_file",
+                serverName = "report",
+                serverUrl = reportServerRunner.url()
+            )
+        )
+    )
+
+    val mcpOrchestrator = McpOrchestrator(
+        router = mcpToolRouter
+    )
 
     val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -99,11 +164,12 @@ suspend fun main() {
         invariantChecker = invariantChecker
     )
 
-    println("AI Advent Challenge — Day 19")
+    println("AI Advent Challenge — Day 20")
     println("Agent: ${agent.name}")
     println("Model: $model")
     println("Public MCP server: ${publicMcpServerUrl ?: "not configured"}")
-    println("Local MCP server: ${localMcpServerRunner.url()}")
+    println("Tracker MCP server: ${trackerServerRunner.url()}")
+    println("Report MCP server: ${reportServerRunner.url()}")
     println()
     printHelp()
 
@@ -285,221 +351,74 @@ suspend fun main() {
                     continue
                 }
 
-                input.equals("mcp-tools", ignoreCase = true) -> {
-                    if (publicMcpServerUrl.isNullOrBlank()) {
-                        println("MCP_SERVER_URL is not configured. Add it to .env or environment variables.")
-                        continue
-                    }
+                input.equals("mcp-routes", ignoreCase = true) -> {
+                    mcpToolRouter.printServers()
+                    mcpToolRouter.printRoutes()
+                    continue
+                }
 
+                input.equals("tracker-tools", ignoreCase = true) -> {
                     try {
-                        println("Connecting to public MCP server: $publicMcpServerUrl")
-
                         val mcpClient = RemoteMcpClient(
                             config = McpServerConfig(
-                                url = publicMcpServerUrl
+                                url = trackerServerRunner.url()
                             )
                         )
 
                         val tools = mcpClient.listTools()
-                        McpToolPrinter.print(publicMcpServerUrl, tools)
+                        McpToolPrinter.print(trackerServerRunner.url(), tools)
                     } catch (e: Exception) {
-                        println("MCP connection failed: ${e.message}")
+                        println("Tracker MCP connection failed: ${e.message}")
                     }
 
                     continue
                 }
 
-                input.equals("local-mcp-tools", ignoreCase = true) -> {
+                input.equals("report-tools", ignoreCase = true) -> {
                     try {
-                        println("Connecting to local MCP server: ${localMcpServerRunner.url()}")
-
                         val mcpClient = RemoteMcpClient(
                             config = McpServerConfig(
-                                url = localMcpServerRunner.url()
+                                url = reportServerRunner.url()
                             )
                         )
 
                         val tools = mcpClient.listTools()
-                        McpToolPrinter.print(localMcpServerRunner.url(), tools)
+                        McpToolPrinter.print(reportServerRunner.url(), tools)
                     } catch (e: Exception) {
-                        println("Local MCP connection failed: ${e.message}")
+                        println("Report MCP connection failed: ${e.message}")
                     }
 
                     continue
                 }
 
-                input.startsWith("mcp-task ", ignoreCase = true) -> {
-                    val taskId = input.removePrefixIgnoreCase("mcp-task ").trim()
-
-                    if (taskId.isBlank()) {
-                        println("Usage: mcp-task <taskId>")
-                        continue
-                    }
-
-                    try {
-                        val mcpClient = RemoteMcpClient(
-                            config = McpServerConfig(
-                                url = localMcpServerRunner.url()
-                            )
-                        )
-
-                        val toolResult = mcpClient.callTool(
-                            name = "get_mock_task",
-                            arguments = mapOf("taskId" to taskId)
-                        )
-
-                        println()
-                        println("========== MCP TOOL RESULT ==========")
-                        println(toolResult.text)
-                        println("=====================================")
-                        println()
-
-                        val agentPrompt = """
-                            Use this MCP tool result as external task tracker data.
-
-                            MCP tool result:
-                            ${toolResult.text}
-
-                            Explain what this task means and suggest the next practical step.
-                        """.trimIndent()
-
-                        val response = agent.handle(agentPrompt)
-
-                        println()
-                        println("${agent.name}:")
-                        println(response)
-                        println()
-                    } catch (e: Exception) {
-                        println("MCP tool call failed: ${e.message}")
-                    }
-
-                    continue
-                }
-
-                input.equals("scheduler-now", ignoreCase = true) -> {
-                    val snapshot = taskSummaryScheduler.collectOnce()
-                    println("Scheduler collected snapshot:")
-                    println(snapshot)
-                    continue
-                }
-
-                input.equals("scheduler-summary", ignoreCase = true) -> {
-                    val summary = taskSummaryScheduler.getAggregatedSummary(limit = 5)
-                    println()
-                    println("========== LOCAL SCHEDULER SUMMARY ==========")
-                    println(summary)
-                    println("=============================================")
-                    println()
-                    continue
-                }
-
-                input.equals("mcp-summary", ignoreCase = true) -> {
-                    try {
-                        val mcpClient = RemoteMcpClient(
-                            config = McpServerConfig(
-                                url = localMcpServerRunner.url()
-                            )
-                        )
-
-                        val toolResult = mcpClient.callTool(
-                            name = "get_periodic_task_summary",
-                            arguments = mapOf("limit" to 5)
-                        )
-
-                        println()
-                        println("========== MCP PERIODIC SUMMARY RESULT ==========")
-                        println(toolResult.text)
-                        println("=================================================")
-                        println()
-
-                        val agentPrompt = """
-                            Use this periodic MCP summary as background task monitoring data.
-
-                            MCP periodic summary:
-                            ${toolResult.text}
-
-                            Give a concise status report and suggest the next practical action.
-                        """.trimIndent()
-
-                        val response = agent.handle(agentPrompt)
-
-                        println()
-                        println("${agent.name}:")
-                        println(response)
-                        println()
-                    } catch (e: Exception) {
-                        println("MCP summary call failed: ${e.message}")
-                    }
-
-                    continue
-                }
-
-                input.startsWith("mcp-pipeline ", ignoreCase = true) -> {
-                    val query = input.removePrefixIgnoreCase("mcp-pipeline ").trim()
+                input.startsWith("mcp-orchestrate ", ignoreCase = true) -> {
+                    val query = input.removePrefixIgnoreCase("mcp-orchestrate ").trim()
 
                     if (query.isBlank()) {
-                        println("Usage: mcp-pipeline <query>")
+                        println("Usage: mcp-orchestrate <query>")
                         continue
                     }
 
                     try {
-                        val mcpClient = RemoteMcpClient(
-                            config = McpServerConfig(
-                                url = localMcpServerRunner.url()
-                            )
-                        )
-
-                        println()
-                        println("========== MCP PIPELINE START ==========")
-
-                        println("Step 1: search_mock_tasks")
-                        val searchResult = mcpClient.callTool(
-                            name = "search_mock_tasks",
-                            arguments = mapOf("query" to query)
-                        )
-                        println(searchResult.text)
-                        println()
-
-                        println("Step 2: summarize_tasks")
-                        val summaryResult = mcpClient.callTool(
-                            name = "summarize_tasks",
-                            arguments = mapOf("tasksText" to searchResult.text)
-                        )
-                        println(summaryResult.text)
-                        println()
-
-                        println("Step 3: save_text_to_file")
-                        val fileName = "task-pipeline-${Instant.now().toEpochMilli()}.txt"
-                        val saveResult = mcpClient.callTool(
-                            name = "save_text_to_file",
-                            arguments = mapOf(
-                                "fileName" to fileName,
-                                "content" to summaryResult.text
-                            )
-                        )
-                        println(saveResult.text)
-
-                        println("=========== MCP PIPELINE END ===========")
-                        println()
+                        val orchestrationResult = mcpOrchestrator.runLongFlow(query)
 
                         val agentPrompt = """
-                            A multi-tool MCP pipeline was executed.
+                            A long MCP orchestration flow was executed across multiple MCP servers.
 
-                            Pipeline:
-                            1. search_mock_tasks
-                            2. summarize_tasks
-                            3. save_text_to_file
+                            Servers:
+                            - tracker server: search_mock_tasks
+                            - report server: summarize_tasks, save_text_to_file
 
-                            Search query:
-                            $query
+                            User query:
+                            ${orchestrationResult.query}
 
-                            Final pipeline summary:
-                            ${summaryResult.text}
+                            Final summary:
+                            ${orchestrationResult.summaryResult}
 
                             Save result:
-                            ${saveResult.text}
+                            ${orchestrationResult.saveResult}
 
-                            Explain what happened and what the user should do next.
+                            Explain the routing decisions, tool order and final outcome.
                         """.trimIndent()
 
                         val response = agent.handle(agentPrompt)
@@ -509,7 +428,7 @@ suspend fun main() {
                         println(response)
                         println()
                     } catch (e: Exception) {
-                        println("MCP pipeline failed: ${e.message}")
+                        println("MCP orchestration failed: ${e.message}")
                     }
 
                     continue
@@ -528,7 +447,8 @@ suspend fun main() {
         }
     } finally {
         httpClient.close()
-        localMcpServerRunner.stop()
+        trackerServerRunner.stop()
+        reportServerRunner.stop()
         taskSummaryScheduler.stop()
     }
 }
@@ -555,13 +475,10 @@ private fun printHelp() {
     println("  invariants")
     println("  invariant <id>|<description>|<forbidden1,forbidden2>")
     println("  clear-invariants")
-    println("  mcp-tools")
-    println("  local-mcp-tools")
-    println("  mcp-task <taskId>")
-    println("  scheduler-now")
-    println("  scheduler-summary")
-    println("  mcp-summary")
-    println("  mcp-pipeline <query>")
+    println("  mcp-routes")
+    println("  tracker-tools")
+    println("  report-tools")
+    println("  mcp-orchestrate <query>")
     println("  exit")
     println()
 }

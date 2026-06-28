@@ -7,7 +7,7 @@ import io.ktor.server.engine.embeddedServer
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 
 class LocalMcpServerRunner(
-    private val config: LocalMcpServerConfig = LocalMcpServerConfig(),
+    private val config: LocalMcpServerConfig,
     private val factory: LocalMcpServerFactory
 ) {
     private var engine: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
@@ -29,7 +29,7 @@ class LocalMcpServerRunner(
             }
         }.start(wait = false)
 
-        println("Local MCP server started: ${config.url}")
+        println("${config.kind} MCP server started: ${config.url}")
     }
 
     fun stop() {
@@ -42,5 +42,9 @@ class LocalMcpServerRunner(
 
     fun url(): String {
         return config.url
+    }
+
+    fun kind(): LocalMcpServerKind {
+        return config.kind
     }
 }
