@@ -8,11 +8,14 @@ import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import ru.maleks.ai_advent_challenge_app.mcp.server.scheduler.TaskSummaryScheduler
 
 class LocalMcpServerFactory(
-    private val mockTaskApi: MockTaskApi = MockTaskApi()
+    private val mockTaskApi: MockTaskApi,
+    private val taskSummaryScheduler: TaskSummaryScheduler
 ) {
 
     fun create(): Server {
@@ -85,6 +88,38 @@ class LocalMcpServerFactory(
             CallToolResult(
                 content = listOf(
                     TextContent(text = result)
+                )
+            )
+        }
+
+        server.addTool(
+            name = "get_periodic_task_summary",
+            description = "Return aggregated result collected periodically by background scheduler.",
+            inputSchema = ToolSchema(
+                properties = buildJsonObject {
+                    put(
+                        "limit",
+                        buildJsonObject {
+                            put("type", "number")
+                            put("description", "Number of recent scheduler snapshots to return. Default is 5.")
+                        }
+                    )
+                },
+                required = emptyList()
+            )
+        ) { request ->
+            val limit = request.params.arguments?.get("limit")
+                ?.jsonPrimitive
+                ?.intOrNull
+                ?: 5
+
+            val safeLimit = limit.coerceIn(1, 20)
+
+            CallToolResult(
+                content = listOf(
+                    TextContent(
+                        text = taskSummaryScheduler.getAggregatedSummary(safeLimit)
+                    )
                 )
             )
         }

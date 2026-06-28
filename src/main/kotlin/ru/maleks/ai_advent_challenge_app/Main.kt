@@ -14,7 +14,10 @@ import ru.maleks.ai_advent_challenge_app.mcp.client.McpServerConfig
 import ru.maleks.ai_advent_challenge_app.mcp.client.McpToolPrinter
 import ru.maleks.ai_advent_challenge_app.mcp.client.RemoteMcpClient
 import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerConfig
+import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerFactory
 import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerRunner
+import ru.maleks.ai_advent_challenge_app.mcp.server.MockTaskApi
+import ru.maleks.ai_advent_challenge_app.mcp.server.scheduler.TaskSummaryScheduler
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
 import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
 import ru.maleks.ai_advent_challenge_app.state.TaskStage
@@ -37,14 +40,29 @@ suspend fun main() {
     val publicMcpServerUrl = dotenv["MCP_SERVER_URL"]
         ?: System.getenv("MCP_SERVER_URL")
 
+    val mockTaskApi = MockTaskApi()
+
+    val taskSummaryScheduler = TaskSummaryScheduler(
+        mockTaskApi = mockTaskApi,
+        intervalSeconds = 10
+    )
+
+    taskSummaryScheduler.start()
+
     val localMcpConfig = LocalMcpServerConfig(
         host = "127.0.0.1",
         port = 3000,
         path = "/mcp"
     )
 
+    val localMcpServerFactory = LocalMcpServerFactory(
+        mockTaskApi = mockTaskApi,
+        taskSummaryScheduler = taskSummaryScheduler
+    )
+
     val localMcpServerRunner = LocalMcpServerRunner(
-        config = localMcpConfig
+        config = localMcpConfig,
+        factory = localMcpServerFactory
     )
 
     localMcpServerRunner.start()
@@ -80,7 +98,7 @@ suspend fun main() {
         invariantChecker = invariantChecker
     )
 
-    println("AI Advent Challenge — Day 17")
+    println("AI Advent Challenge — Day 18")
     println("Agent: ${agent.name}")
     println("Model: $model")
     println("Public MCP server: ${publicMcpServerUrl ?: "not configured"}")
@@ -358,6 +376,66 @@ suspend fun main() {
 
                     continue
                 }
+
+                input.equals("scheduler-now", ignoreCase = true) -> {
+                    val snapshot = taskSummaryScheduler.collectOnce()
+                    println("Scheduler collected snapshot:")
+                    println(snapshot)
+                    continue
+                }
+
+                input.equals("scheduler-summary", ignoreCase = true) -> {
+                    val summary = taskSummaryScheduler.getAggregatedSummary(limit = 5)
+                    println()
+                    println("========== LOCAL SCHEDULER SUMMARY ==========")
+                    println(summary)
+                    println("=============================================")
+                    println()
+                    continue
+                }
+
+                input.equals("mcp-summary", ignoreCase = true) -> {
+                    try {
+                        val mcpClient = RemoteMcpClient(
+                            config = McpServerConfig(
+                                url = localMcpServerRunner.url()
+                            )
+                        )
+
+                        val toolResult = mcpClient.callTool(
+                            name = "get_periodic_task_summary",
+                            arguments = mapOf(
+                                "limit" to 5
+                            )
+                        )
+
+                        println()
+                        println("========== MCP PERIODIC SUMMARY RESULT ==========")
+                        println(toolResult.text)
+                        println("=================================================")
+                        println()
+
+                        val agentPrompt = """
+                            Use this periodic MCP summary as background task monitoring data.
+
+                            MCP periodic summary:
+                            ${toolResult.text}
+
+                            Give a concise status report and suggest the next practical action.
+                        """.trimIndent()
+
+                        val response = agent.handle(agentPrompt)
+
+                        println()
+                        println("${agent.name}:")
+                        println(response)
+                        println()
+                    } catch (e: Exception) {
+                        println("MCP summary call failed: ${e.message}")
+                    }
+
+                    continue
+                }
             }
 
             try {
@@ -373,6 +451,7 @@ suspend fun main() {
     } finally {
         httpClient.close()
         localMcpServerRunner.stop()
+        taskSummaryScheduler.stop()
     }
 }
 
@@ -401,6 +480,9 @@ private fun printHelp() {
     println("  mcp-tools")
     println("  local-mcp-tools")
     println("  mcp-task <taskId>")
+    println("  scheduler-now")
+    println("  scheduler-summary")
+    println("  mcp-summary")
     println("  exit")
     println()
 }

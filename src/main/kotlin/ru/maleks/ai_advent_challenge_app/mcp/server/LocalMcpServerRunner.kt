@@ -8,7 +8,7 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 
 class LocalMcpServerRunner(
     private val config: LocalMcpServerConfig = LocalMcpServerConfig(),
-    private val factory: LocalMcpServerFactory = LocalMcpServerFactory()
+    private val factory: LocalMcpServerFactory
 ) {
     private var engine: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
 

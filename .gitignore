@@ -49,3 +49,4 @@ assistant-memory.json
 user-profiles.json
 task-state.json
 invariants.json
+task-summary.json

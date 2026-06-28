@@ -32,4 +32,8 @@ class MockTaskApi {
     fun getTask(taskId: String): MockTask? {
         return tasks[taskId.uppercase()]
     }
+
+    fun getAllTasks(): List<MockTask> {
+        return tasks.values.toList()
+    }
 }
