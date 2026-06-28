@@ -10,6 +10,9 @@ import ru.maleks.ai_advent_challenge_app.invariant.Invariant
 import ru.maleks.ai_advent_challenge_app.invariant.InvariantChecker
 import ru.maleks.ai_advent_challenge_app.invariant.InvariantStorage
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
+import ru.maleks.ai_advent_challenge_app.mcp.client.RemoteMcpClient
+import ru.maleks.ai_advent_challenge_app.mcp.client.McpServerConfig
+import ru.maleks.ai_advent_challenge_app.mcp.client.McpToolPrinter
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
 import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
 import ru.maleks.ai_advent_challenge_app.state.TaskStage
@@ -28,6 +31,9 @@ suspend fun main() {
     val model = dotenv["OPENROUTER_MODEL"]
         ?: System.getenv("OPENROUTER_MODEL")
         ?: "openai/gpt-4o-mini"
+
+    val mcpServerUrl = dotenv["MCP_SERVER_URL"]
+        ?: System.getenv("MCP_SERVER_URL")
 
     val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -60,9 +66,10 @@ suspend fun main() {
         invariantChecker = invariantChecker
     )
 
-    println("AI Advent Challenge — Day 15")
+    println("AI Advent Challenge — Day 16")
     println("Agent: ${agent.name}")
     println("Model: $model")
+    println("MCP server: ${mcpServerUrl ?: "not configured"}")
     println()
     printHelp()
 
@@ -242,6 +249,30 @@ suspend fun main() {
                 println("Invariants cleared.")
                 continue
             }
+
+            input.equals("mcp-tools", ignoreCase = true) -> {
+                if (mcpServerUrl.isNullOrBlank()) {
+                    println("MCP_SERVER_URL is not configured. Add it to .env or environment variables.")
+                    continue
+                }
+
+                try {
+                    println("Connecting to MCP server: $mcpServerUrl")
+
+                    val mcpClient = RemoteMcpClient(
+                        config = McpServerConfig(
+                            url = mcpServerUrl
+                        )
+                    )
+
+                    val tools = mcpClient.listTools()
+                    McpToolPrinter.print(mcpServerUrl, tools)
+                } catch (e: Exception) {
+                    println("MCP connection failed: ${e.message}")
+                }
+
+                continue
+            }
         }
 
         try {
@@ -280,6 +311,7 @@ private fun printHelp() {
     println("  invariants")
     println("  invariant <id>|<description>|<forbidden1,forbidden2>")
     println("  clear-invariants")
+    println("  mcp-tools")
     println("  exit")
     println()
 }
