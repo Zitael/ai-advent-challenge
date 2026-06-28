@@ -10,9 +10,11 @@ import ru.maleks.ai_advent_challenge_app.invariant.Invariant
 import ru.maleks.ai_advent_challenge_app.invariant.InvariantChecker
 import ru.maleks.ai_advent_challenge_app.invariant.InvariantStorage
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
-import ru.maleks.ai_advent_challenge_app.mcp.client.RemoteMcpClient
 import ru.maleks.ai_advent_challenge_app.mcp.client.McpServerConfig
 import ru.maleks.ai_advent_challenge_app.mcp.client.McpToolPrinter
+import ru.maleks.ai_advent_challenge_app.mcp.client.RemoteMcpClient
+import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerConfig
+import ru.maleks.ai_advent_challenge_app.mcp.server.LocalMcpServerRunner
 import ru.maleks.ai_advent_challenge_app.memory.AssistantMemoryStorage
 import ru.maleks.ai_advent_challenge_app.profile.UserProfileStorage
 import ru.maleks.ai_advent_challenge_app.state.TaskStage
@@ -32,8 +34,20 @@ suspend fun main() {
         ?: System.getenv("OPENROUTER_MODEL")
         ?: "openai/gpt-4o-mini"
 
-    val mcpServerUrl = dotenv["MCP_SERVER_URL"]
+    val publicMcpServerUrl = dotenv["MCP_SERVER_URL"]
         ?: System.getenv("MCP_SERVER_URL")
+
+    val localMcpConfig = LocalMcpServerConfig(
+        host = "127.0.0.1",
+        port = 3000,
+        path = "/mcp"
+    )
+
+    val localMcpServerRunner = LocalMcpServerRunner(
+        config = localMcpConfig
+    )
+
+    localMcpServerRunner.start()
 
     val httpClient = HttpClient(CIO) {
         install(ContentNegotiation) {
@@ -66,227 +80,300 @@ suspend fun main() {
         invariantChecker = invariantChecker
     )
 
-    println("AI Advent Challenge — Day 16")
+    println("AI Advent Challenge — Day 17")
     println("Agent: ${agent.name}")
     println("Model: $model")
-    println("MCP server: ${mcpServerUrl ?: "not configured"}")
+    println("Public MCP server: ${publicMcpServerUrl ?: "not configured"}")
+    println("Local MCP server: ${localMcpServerRunner.url()}")
     println()
     printHelp()
 
-    while (true) {
-        print("You: ")
-        val input = readlnOrNull()?.trim()
+    try {
+        while (true) {
+            print("You: ")
+            val input = readlnOrNull()?.trim()
 
-        if (input.isNullOrBlank()) {
-            continue
-        }
-
-        when {
-            input.equals("exit", ignoreCase = true) -> break
-
-            input.equals("help", ignoreCase = true) -> {
-                printHelp()
+            if (input.isNullOrBlank()) {
                 continue
             }
 
-            input.equals("memory", ignoreCase = true) -> {
-                agent.printMemory()
-                continue
-            }
+            when {
+                input.equals("exit", ignoreCase = true) -> break
 
-            input.equals("clear", ignoreCase = true) -> {
-                agent.clearMemory()
-                println("Memory cleared.")
-                continue
-            }
-
-            input.equals("profiles", ignoreCase = true) -> {
-                println("Available profiles:")
-                profiles.values.forEach { profile ->
-                    val marker = if (profile.id == activeProfile.id) "*" else " "
-                    println("$marker ${profile.id} — ${profile.name}")
-                }
-                continue
-            }
-
-            input.startsWith("profile ", ignoreCase = true) -> {
-                val profileId = input.removePrefixIgnoreCase("profile ").trim()
-                val profile = profiles[profileId]
-
-                if (profile == null) {
-                    println("Profile not found: $profileId")
-                } else {
-                    activeProfile = profile
-                    agent.setUserProfile(profile)
-                    println("Active profile: ${profile.id} — ${profile.name}")
-                }
-
-                continue
-            }
-
-            input.startsWith("remember short ", ignoreCase = true) -> {
-                val text = input.removePrefixIgnoreCase("remember short ").trim()
-                agent.rememberShort(text)
-                println("Saved to short-term memory.")
-                continue
-            }
-
-            input.startsWith("remember work ", ignoreCase = true) -> {
-                val pair = input.removePrefixIgnoreCase("remember work ").trim()
-                val parsed = parseKeyValue(pair)
-
-                if (parsed == null) {
-                    println("Invalid format. Use: remember work key=value")
-                } else {
-                    agent.rememberWorking(parsed.first, parsed.second)
-                    println("Saved to working memory.")
-                }
-
-                continue
-            }
-
-            input.startsWith("remember long ", ignoreCase = true) -> {
-                val pair = input.removePrefixIgnoreCase("remember long ").trim()
-                val parsed = parseKeyValue(pair)
-
-                if (parsed == null) {
-                    println("Invalid format. Use: remember long key=value")
-                } else {
-                    agent.rememberLongTerm(parsed.first, parsed.second)
-                    println("Saved to long-term memory.")
-                }
-
-                continue
-            }
-
-            input.equals("state", ignoreCase = true) -> {
-                taskStateMachine.printState()
-                continue
-            }
-
-            input.startsWith("task ", ignoreCase = true) -> {
-                val description = input.removePrefixIgnoreCase("task ").trim()
-                taskStateMachine.setTask(description)
-                println("Task description saved. Stage: PLANNING")
-                continue
-            }
-
-            input.startsWith("step ", ignoreCase = true) -> {
-                val step = input.removePrefixIgnoreCase("step ").trim()
-                taskStateMachine.setCurrentStep(step)
-                println("Current step saved.")
-                continue
-            }
-
-            input.startsWith("expect ", ignoreCase = true) -> {
-                val action = input.removePrefixIgnoreCase("expect ").trim()
-                taskStateMachine.setExpectedAction(action)
-                println("Expected action saved.")
-                continue
-            }
-
-            input.startsWith("plan ", ignoreCase = true) -> {
-                val plan = input.removePrefixIgnoreCase("plan ").trim()
-                taskStateMachine.setApprovedPlan(plan)
-                println("Approved plan saved.")
-                continue
-            }
-
-            input.equals("next", ignoreCase = true) -> {
-                val result = taskStateMachine.next()
-                println(result.message)
-                continue
-            }
-
-            input.equals("back", ignoreCase = true) -> {
-                val result = taskStateMachine.back()
-                println(result.message)
-                continue
-            }
-
-            input.startsWith("goto ", ignoreCase = true) -> {
-                val rawStage = input.removePrefixIgnoreCase("goto ").trim()
-                val targetStage = parseTaskStage(rawStage)
-
-                if (targetStage == null) {
-                    println("Unknown stage: $rawStage")
-                    println("Available stages: planning, execution, validation, done")
-                } else {
-                    val result = taskStateMachine.transitionTo(targetStage)
-                    println(result.message)
-                }
-
-                continue
-            }
-
-            input.equals("reset-state", ignoreCase = true) -> {
-                taskStateMachine.reset()
-                println("Task state reset.")
-                continue
-            }
-
-            input.equals("invariants", ignoreCase = true) -> {
-                invariantChecker.printInvariants()
-                continue
-            }
-
-            input.startsWith("invariant ", ignoreCase = true) -> {
-                val raw = input.removePrefixIgnoreCase("invariant ").trim()
-                val parsed = parseInvariant(raw)
-
-                if (parsed == null) {
-                    println("Invalid format. Use: invariant <id>|<description>|<forbidden1,forbidden2>")
-                } else {
-                    invariantChecker.add(parsed)
-                    println("Invariant saved: ${parsed.id}")
-                }
-
-                continue
-            }
-
-            input.equals("clear-invariants", ignoreCase = true) -> {
-                invariantChecker.clear()
-                println("Invariants cleared.")
-                continue
-            }
-
-            input.equals("mcp-tools", ignoreCase = true) -> {
-                if (mcpServerUrl.isNullOrBlank()) {
-                    println("MCP_SERVER_URL is not configured. Add it to .env or environment variables.")
+                input.equals("help", ignoreCase = true) -> {
+                    printHelp()
                     continue
                 }
 
-                try {
-                    println("Connecting to MCP server: $mcpServerUrl")
-
-                    val mcpClient = RemoteMcpClient(
-                        config = McpServerConfig(
-                            url = mcpServerUrl
-                        )
-                    )
-
-                    val tools = mcpClient.listTools()
-                    McpToolPrinter.print(mcpServerUrl, tools)
-                } catch (e: Exception) {
-                    println("MCP connection failed: ${e.message}")
+                input.equals("memory", ignoreCase = true) -> {
+                    agent.printMemory()
+                    continue
                 }
 
-                continue
+                input.equals("clear", ignoreCase = true) -> {
+                    agent.clearMemory()
+                    println("Memory cleared.")
+                    continue
+                }
+
+                input.equals("profiles", ignoreCase = true) -> {
+                    println("Available profiles:")
+                    profiles.values.forEach { profile ->
+                        val marker = if (profile.id == activeProfile.id) "*" else " "
+                        println("$marker ${profile.id} — ${profile.name}")
+                    }
+                    continue
+                }
+
+                input.startsWith("profile ", ignoreCase = true) -> {
+                    val profileId = input.removePrefixIgnoreCase("profile ").trim()
+                    val profile = profiles[profileId]
+
+                    if (profile == null) {
+                        println("Profile not found: $profileId")
+                    } else {
+                        activeProfile = profile
+                        agent.setUserProfile(profile)
+                        println("Active profile: ${profile.id} — ${profile.name}")
+                    }
+
+                    continue
+                }
+
+                input.startsWith("remember short ", ignoreCase = true) -> {
+                    val text = input.removePrefixIgnoreCase("remember short ").trim()
+                    agent.rememberShort(text)
+                    println("Saved to short-term memory.")
+                    continue
+                }
+
+                input.startsWith("remember work ", ignoreCase = true) -> {
+                    val pair = input.removePrefixIgnoreCase("remember work ").trim()
+                    val parsed = parseKeyValue(pair)
+
+                    if (parsed == null) {
+                        println("Invalid format. Use: remember work key=value")
+                    } else {
+                        agent.rememberWorking(parsed.first, parsed.second)
+                        println("Saved to working memory.")
+                    }
+
+                    continue
+                }
+
+                input.startsWith("remember long ", ignoreCase = true) -> {
+                    val pair = input.removePrefixIgnoreCase("remember long ").trim()
+                    val parsed = parseKeyValue(pair)
+
+                    if (parsed == null) {
+                        println("Invalid format. Use: remember long key=value")
+                    } else {
+                        agent.rememberLongTerm(parsed.first, parsed.second)
+                        println("Saved to long-term memory.")
+                    }
+
+                    continue
+                }
+
+                input.equals("state", ignoreCase = true) -> {
+                    taskStateMachine.printState()
+                    continue
+                }
+
+                input.startsWith("task ", ignoreCase = true) -> {
+                    val description = input.removePrefixIgnoreCase("task ").trim()
+                    taskStateMachine.setTask(description)
+                    println("Task description saved. Stage: PLANNING")
+                    continue
+                }
+
+                input.startsWith("step ", ignoreCase = true) -> {
+                    val step = input.removePrefixIgnoreCase("step ").trim()
+                    taskStateMachine.setCurrentStep(step)
+                    println("Current step saved.")
+                    continue
+                }
+
+                input.startsWith("expect ", ignoreCase = true) -> {
+                    val action = input.removePrefixIgnoreCase("expect ").trim()
+                    taskStateMachine.setExpectedAction(action)
+                    println("Expected action saved.")
+                    continue
+                }
+
+                input.startsWith("plan ", ignoreCase = true) -> {
+                    val plan = input.removePrefixIgnoreCase("plan ").trim()
+                    taskStateMachine.setApprovedPlan(plan)
+                    println("Approved plan saved.")
+                    continue
+                }
+
+                input.equals("next", ignoreCase = true) -> {
+                    val result = taskStateMachine.next()
+                    println(result.message)
+                    continue
+                }
+
+                input.equals("back", ignoreCase = true) -> {
+                    val result = taskStateMachine.back()
+                    println(result.message)
+                    continue
+                }
+
+                input.startsWith("goto ", ignoreCase = true) -> {
+                    val rawStage = input.removePrefixIgnoreCase("goto ").trim()
+                    val targetStage = parseTaskStage(rawStage)
+
+                    if (targetStage == null) {
+                        println("Unknown stage: $rawStage")
+                        println("Available stages: planning, execution, validation, done")
+                    } else {
+                        val result = taskStateMachine.transitionTo(targetStage)
+                        println(result.message)
+                    }
+
+                    continue
+                }
+
+                input.equals("reset-state", ignoreCase = true) -> {
+                    taskStateMachine.reset()
+                    println("Task state reset.")
+                    continue
+                }
+
+                input.equals("invariants", ignoreCase = true) -> {
+                    invariantChecker.printInvariants()
+                    continue
+                }
+
+                input.startsWith("invariant ", ignoreCase = true) -> {
+                    val raw = input.removePrefixIgnoreCase("invariant ").trim()
+                    val parsed = parseInvariant(raw)
+
+                    if (parsed == null) {
+                        println("Invalid format. Use: invariant <id>|<description>|<forbidden1,forbidden2>")
+                    } else {
+                        invariantChecker.add(parsed)
+                        println("Invariant saved: ${parsed.id}")
+                    }
+
+                    continue
+                }
+
+                input.equals("clear-invariants", ignoreCase = true) -> {
+                    invariantChecker.clear()
+                    println("Invariants cleared.")
+                    continue
+                }
+
+                input.equals("mcp-tools", ignoreCase = true) -> {
+                    if (publicMcpServerUrl.isNullOrBlank()) {
+                        println("MCP_SERVER_URL is not configured. Add it to .env or environment variables.")
+                        continue
+                    }
+
+                    try {
+                        println("Connecting to public MCP server: $publicMcpServerUrl")
+
+                        val mcpClient = RemoteMcpClient(
+                            config = McpServerConfig(
+                                url = publicMcpServerUrl
+                            )
+                        )
+
+                        val tools = mcpClient.listTools()
+                        McpToolPrinter.print(publicMcpServerUrl, tools)
+                    } catch (e: Exception) {
+                        println("MCP connection failed: ${e.message}")
+                    }
+
+                    continue
+                }
+
+                input.equals("local-mcp-tools", ignoreCase = true) -> {
+                    try {
+                        println("Connecting to local MCP server: ${localMcpServerRunner.url()}")
+
+                        val mcpClient = RemoteMcpClient(
+                            config = McpServerConfig(
+                                url = localMcpServerRunner.url()
+                            )
+                        )
+
+                        val tools = mcpClient.listTools()
+                        McpToolPrinter.print(localMcpServerRunner.url(), tools)
+                    } catch (e: Exception) {
+                        println("Local MCP connection failed: ${e.message}")
+                    }
+
+                    continue
+                }
+
+                input.startsWith("mcp-task ", ignoreCase = true) -> {
+                    val taskId = input.removePrefixIgnoreCase("mcp-task ").trim()
+
+                    if (taskId.isBlank()) {
+                        println("Usage: mcp-task <taskId>")
+                        continue
+                    }
+
+                    try {
+                        val mcpClient = RemoteMcpClient(
+                            config = McpServerConfig(
+                                url = localMcpServerRunner.url()
+                            )
+                        )
+
+                        val toolResult = mcpClient.callTool(
+                            name = "get_mock_task",
+                            arguments = mapOf(
+                                "taskId" to taskId
+                            )
+                        )
+
+                        println()
+                        println("========== MCP TOOL RESULT ==========")
+                        println(toolResult.text)
+                        println("=====================================")
+                        println()
+
+                        val agentPrompt = """
+                            Use this MCP tool result as external task tracker data.
+
+                            MCP tool result:
+                            ${toolResult.text}
+
+                            Explain what this task means and suggest the next practical step.
+                        """.trimIndent()
+
+                        val response = agent.handle(agentPrompt)
+
+                        println()
+                        println("${agent.name}:")
+                        println(response)
+                        println()
+                    } catch (e: Exception) {
+                        println("MCP tool call failed: ${e.message}")
+                    }
+
+                    continue
+                }
+            }
+
+            try {
+                val response = agent.handle(input)
+                println()
+                println("${agent.name}:")
+                println(response)
+                println()
+            } catch (e: Exception) {
+                println("Error: ${e.message}")
             }
         }
-
-        try {
-            val response = agent.handle(input)
-            println()
-            println("${agent.name}:")
-            println(response)
-            println()
-        } catch (e: Exception) {
-            println("Error: ${e.message}")
-        }
+    } finally {
+        httpClient.close()
+        localMcpServerRunner.stop()
     }
-
-    httpClient.close()
 }
 
 private fun printHelp() {
@@ -312,6 +399,8 @@ private fun printHelp() {
     println("  invariant <id>|<description>|<forbidden1,forbidden2>")
     println("  clear-invariants")
     println("  mcp-tools")
+    println("  local-mcp-tools")
+    println("  mcp-task <taskId>")
     println("  exit")
     println()
 }
