@@ -7,6 +7,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.jackson.jackson
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
 import ru.maleks.ai_advent_challenge_app.llm.OpenRouterMessage
+import ru.maleks.ai_advent_challenge_app.rag.answer.GroundedRagContextBuilder
 import ru.maleks.ai_advent_challenge_app.rag.embedding.HashEmbeddingClient
 import ru.maleks.ai_advent_challenge_app.rag.index.DocumentIndexStorage
 import ru.maleks.ai_advent_challenge_app.rag.prompt.RagPromptBuilder
@@ -18,9 +19,7 @@ import java.nio.file.Path
 import kotlin.io.path.writeText
 
 suspend fun main(args: Array<String>) {
-    val dotenv = dotenv {
-        ignoreIfMissing = true
-    }
+    val dotenv = dotenv { ignoreIfMissing = true }
 
     val apiKey = dotenv["OPENROUTER_API_KEY"]
         ?: System.getenv("OPENROUTER_API_KEY")
@@ -62,37 +61,13 @@ suspend fun main(args: Array<String>) {
     val index = DocumentIndexStorage().load(indexPath)
     val searchService = VectorSearchService(embeddingClient)
     val improvedRetriever = ImprovedRagRetriever(searchService)
+    val groundedContextBuilder = GroundedRagContextBuilder(
+        minBestScore = 0.08,
+        minSources = 1
+    )
     val promptBuilder = RagPromptBuilder()
 
     try {
-        println("AI Advent Challenge — Day 23")
-        println("Model: $model")
-        println("Index: ${indexPath.toAbsolutePath()}")
-        println("Question: $question")
-        println()
-
-        val noRagPrompt = """
-            Ответь на вопрос пользователя без использования внешней базы знаний.
-
-            Вопрос:
-            $question
-        """.trimIndent()
-
-        val noRagAnswer = llmClient.completeUserPrompt(noRagPrompt)
-
-        val basicResults = searchService.search(
-            question = question,
-            index = index,
-            topK = 3
-        )
-
-        val basicRagPrompt = promptBuilder.build(
-            question = question,
-            results = basicResults
-        )
-
-        val basicRagAnswer = llmClient.completeUserPrompt(basicRagPrompt)
-
         val improvedResult = improvedRetriever.retrieve(
             question = question,
             index = index,
@@ -100,151 +75,129 @@ suspend fun main(args: Array<String>) {
             finalTopK = 3
         )
 
-        val improvedRagPrompt = promptBuilder.buildFromReranked(
+        val groundedContext = groundedContextBuilder.build(
             question = question,
             results = improvedResult.rerankedResults
         )
 
-        val improvedRagAnswer = llmClient.completeUserPrompt(improvedRagPrompt)
+        val groundedAnswer = if (!groundedContext.enoughContext) {
+            """
+            ## Ответ
+            Не знаю по имеющейся базе знаний. Нужно уточнение.
 
-        printConsoleReport(
+            ## Причина
+            ${groundedContext.reason}
+
+            ## Источники
+            ${groundedContext.sources.joinToString("\n") { "- source: ${it.source}, section: ${it.section}, chunk_id: ${it.chunkId}" }.ifBlank { "- источники не найдены" }}
+
+            ## Цитаты
+            ${groundedContext.sources.joinToString("\n") { "- \"${it.quote}\"" }.ifBlank { "- цитаты отсутствуют" }}
+            """.trimIndent()
+        } else {
+            llmClient.completeUserPrompt(
+                promptBuilder.buildGroundedPrompt(groundedContext)
+            )
+        }
+
+        val validation = validateGroundedAnswer(groundedAnswer)
+
+        saveDay24Report(
             question = question,
-            noRagAnswer = noRagAnswer,
-            basicResults = basicResults,
-            basicRagAnswer = basicRagAnswer,
-            improvedResult = improvedResult,
-            improvedRagAnswer = improvedRagAnswer
+            rewrittenQuery = improvedResult.rewrittenQuery,
+            groundedContext = groundedContext,
+            groundedAnswer = groundedAnswer,
+            validation = validation
         )
 
-        saveReport(
-            question = question,
-            noRagAnswer = noRagAnswer,
-            basicResults = basicResults,
-            basicRagAnswer = basicRagAnswer,
-            improvedResult = improvedResult,
-            improvedRagAnswer = improvedRagAnswer
-        )
+        println("AI Advent Challenge - Day 24")
+        println("Question loaded. See report: rag-index/day24-grounded-rag-report.md")
+        println("Enough context: ${groundedContext.enoughContext}")
+        println("Reason: ${groundedContext.reason}")
+        println("Sources: ${groundedContext.sources.size}")
+        println("Has sources block: ${validation.hasSourcesBlock}")
+        println("Has quotes block: ${validation.hasQuotesBlock}")
     } finally {
         httpClient.close()
     }
 }
 
-private fun printConsoleReport(
-    question: String,
-    noRagAnswer: String,
-    basicResults: List<ru.maleks.ai_advent_challenge_app.rag.search.SearchResult>,
-    basicRagAnswer: String,
-    improvedResult: ru.maleks.ai_advent_challenge_app.rag.search.ImprovedRetrieveResult,
-    improvedRagAnswer: String
-) {
-    println("========== WITHOUT RAG ==========")
-    println(noRagAnswer)
-    println()
+private data class GroundedAnswerValidation(
+    val hasSourcesBlock: Boolean,
+    val hasQuotesBlock: Boolean,
+    val hasUnknownMode: Boolean
+)
 
-    println("========== BASIC RAG CHUNKS ==========")
-    basicResults.forEachIndexed { i, result ->
-        println(
-            "${i + 1}. ${result.chunk.source} | section=${result.chunk.section} | similarity=${
-                "%.4f".format(result.score)
-            }"
-        )
-    }
-    println()
-
-    println("========== BASIC RAG ANSWER ==========")
-    println(basicRagAnswer)
-    println()
-
-    println("========== IMPROVED RAG ==========")
-    println("Original question: $question")
-    println("Rewritten query: ${improvedResult.rewrittenQuery}")
-    println("Raw topK before filter: ${improvedResult.rawResults.size}")
-    println("After similarity filter: ${improvedResult.filteredResults.size}")
-    println("Final topK after rerank: ${improvedResult.rerankedResults.size}")
-    println()
-
-    println("========== IMPROVED RAG CHUNKS ==========")
-    improvedResult.rerankedResults.forEachIndexed { i, result ->
-        println(
-            "${i + 1}. ${result.chunk.source} | section=${result.chunk.section} | similarity=${
-                "%.4f".format(result.similarityScore)
-            } | keyword=${"%.4f".format(result.keywordScore)} | final=${"%.4f".format(result.finalScore)}"
-        )
-    }
-    println()
-
-    println("========== IMPROVED RAG ANSWER ==========")
-    println(improvedRagAnswer)
-    println()
-
-    println("========== CONTROL QUESTIONS ==========")
-    ControlQuestionSet.questions().forEach { control ->
-        println("${control.id}. ${control.question}")
-        println("   expected contains: ${control.expectedAnswerShouldContain.joinToString(", ")}")
-        println("   expected sources: ${control.expectedSources.joinToString(", ")}")
-    }
+private fun validateGroundedAnswer(answer: String): GroundedAnswerValidation {
+    return GroundedAnswerValidation(
+        hasSourcesBlock = answer.contains("## Источники", ignoreCase = true),
+        hasQuotesBlock = answer.contains("## Цитаты", ignoreCase = true),
+        hasUnknownMode = answer.contains("Не знаю", ignoreCase = true)
+    )
 }
 
-private fun saveReport(
+private fun saveDay24Report(
     question: String,
-    noRagAnswer: String,
-    basicResults: List<ru.maleks.ai_advent_challenge_app.rag.search.SearchResult>,
-    basicRagAnswer: String,
-    improvedResult: ru.maleks.ai_advent_challenge_app.rag.search.ImprovedRetrieveResult,
-    improvedRagAnswer: String
+    rewrittenQuery: String,
+    groundedContext: ru.maleks.ai_advent_challenge_app.rag.answer.GroundedRagContext,
+    groundedAnswer: String,
+    validation: GroundedAnswerValidation
 ) {
     val outputDirectory = Path.of("rag-index")
     Files.createDirectories(outputDirectory)
 
     val report = """
-        # Day 23 — RAG reranking and filtering report
+        # Day 24 — Grounded RAG: citations, sources and anti-hallucination
 
         ## Question
 
         $question
 
-        ## Without RAG
-
-        $noRagAnswer
-
-        ## Basic RAG retrieved chunks
-
-        ${basicResults.joinToString("\n") { result ->
-        "- ${result.chunk.source} | section=${result.chunk.section} | similarity=${"%.4f".format(result.score)}"
-    }}
-
-        ## Basic RAG answer
-
-        $basicRagAnswer
-
-        ## Improved RAG settings
-
-        - query rewrite: enabled
-        - raw topK before filter: ${improvedResult.rawResults.size}
-        - similarity threshold: 0.08
-        - chunks after filtering: ${improvedResult.filteredResults.size}
-        - final topK after reranking: ${improvedResult.rerankedResults.size}
-
         ## Rewritten query
 
-        ${improvedResult.rewrittenQuery}
+        $rewrittenQuery
 
-        ## Improved RAG retrieved chunks
+        ## Context decision
 
-        ${improvedResult.rerankedResults.joinToString("\n") { result ->
-        "- ${result.chunk.source} | section=${result.chunk.section} | similarity=${"%.4f".format(result.similarityScore)} | keyword=${"%.4f".format(result.keywordScore)} | final=${"%.4f".format(result.finalScore)}"
+        - enough context: ${groundedContext.enoughContext}
+        - reason: ${groundedContext.reason}
+
+        ## Retrieved sources
+
+        ${groundedContext.sources.joinToString("\n\n") { source ->
+        """
+            ### Source
+
+            - source: ${source.source}
+            - title: ${source.title}
+            - section: ${source.section}
+            - chunk_id: ${source.chunkId}
+            - score: ${"%.4f".format(source.score)}
+
+            Quote:
+
+            > ${source.quote}
+            """.trimIndent()
     }}
 
-        ## Improved RAG answer
+        ## Answer
 
-        $improvedRagAnswer
+        $groundedAnswer
+
+        ## Validation
+
+        - has sources block: ${validation.hasSourcesBlock}
+        - has quotes block: ${validation.hasQuotesBlock}
+        - unknown mode: ${validation.hasUnknownMode}
+
+        ## Control questions
+
+        ${ControlQuestionSet.questions().joinToString("\n") { question ->
+        "- ${question.id}. ${question.question}; expected sources: ${question.expectedSources.joinToString(", ")}"
+    }}
     """.trimIndent()
 
-    val reportPath = outputDirectory.resolve("day23-rag-rerank-report.md")
-    reportPath.writeText(report, Charsets.UTF_8)
-
-    println()
-    println("Report saved to: ${reportPath.toAbsolutePath()}")
+    outputDirectory.resolve("day24-grounded-rag-report.md").writeText(report, Charsets.UTF_8)
 }
 
 private suspend fun OpenRouterClient.completeUserPrompt(prompt: String): String {
