@@ -1,5 +1,6 @@
 package ru.maleks.ai_advent_challenge_app.rag.prompt
 
+import ru.maleks.ai_advent_challenge_app.rag.search.RerankedSearchResult
 import ru.maleks.ai_advent_challenge_app.rag.search.SearchResult
 
 class RagPromptBuilder {
@@ -10,12 +11,33 @@ class RagPromptBuilder {
             Source: ${result.chunk.source}
             Title: ${result.chunk.title}
             Section: ${result.chunk.section}
-            Score: ${"%.4f".format(result.score)}
+            Similarity score: ${"%.4f".format(result.score)}
 
             ${result.chunk.text}
             """.trimIndent()
         }
 
+        return buildPrompt(question, context)
+    }
+
+    fun buildFromReranked(question: String, results: List<RerankedSearchResult>): String {
+        val context = results.joinToString("\n\n") { result ->
+            """
+            Source: ${result.chunk.source}
+            Title: ${result.chunk.title}
+            Section: ${result.chunk.section}
+            Similarity score: ${"%.4f".format(result.similarityScore)}
+            Keyword score: ${"%.4f".format(result.keywordScore)}
+            Final rerank score: ${"%.4f".format(result.finalScore)}
+
+            ${result.chunk.text}
+            """.trimIndent()
+        }
+
+        return buildPrompt(question, context)
+    }
+
+    private fun buildPrompt(question: String, context: String): String {
         return """
             Ты отвечаешь на вопрос пользователя, используя только контекст ниже.
 
