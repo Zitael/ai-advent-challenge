@@ -29,9 +29,30 @@ application {
     mainClass.set("ru.maleks.ai_advent_challenge_app.MainKt")
 }
 
+tasks.withType<JavaExec>().configureEach {
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-Dsun.stdout.encoding=UTF-8",
+        "-Dsun.stderr.encoding=UTF-8"
+    )
+}
+
 tasks.register<JavaExec>("runRagIndex") {
     group = "application"
     description = "Build local RAG document indexes"
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("ru.maleks.ai_advent_challenge_app.rag.RagIndexCliKt")
+}
+
+tasks.register<JavaExec>("runRagAsk") {
+    group = "application"
+    description = "Ask a question with and without RAG"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.rag.RagAskCliKt")
+
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-Dsun.stdout.encoding=UTF-8",
+        "-Dsun.stderr.encoding=UTF-8"
+    )
 }
