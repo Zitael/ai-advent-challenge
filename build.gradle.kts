@@ -56,3 +56,13 @@ tasks.register<JavaExec>("runRagAsk") {
         "-Dsun.stderr.encoding=UTF-8"
     )
 }
+
+tasks.register<JavaExec>("runRagChat") {
+    group = "application"
+
+    classpath = sourceSets["main"].runtimeClasspath
+
+    mainClass.set("ru.maleks.ai_advent_challenge_app.rag.chat.RagChatCliKt")
+
+    standardInput = System.`in`
+}
