@@ -51,3 +51,4 @@ task-state.json
 invariants.json
 task-summary.json
 mcp-pipeline-output/
+rag-index/
