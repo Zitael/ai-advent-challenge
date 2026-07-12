@@ -52,3 +52,4 @@ invariants.json
 task-summary.json
 mcp-pipeline-output/
 rag-index/
+ollama-output/

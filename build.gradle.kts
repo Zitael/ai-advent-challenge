@@ -66,3 +66,12 @@ tasks.register<JavaExec>("runRagChat") {
 
     standardInput = System.`in`
 }
+
+tasks.register<JavaExec>("runOllamaDemo") {
+    group = "application"
+    description = "Run three requests against a local Ollama model"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaDemoCliKt"
+    )
+}
