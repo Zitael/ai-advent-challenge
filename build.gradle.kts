@@ -59,12 +59,21 @@ tasks.register<JavaExec>("runRagAsk") {
 
 tasks.register<JavaExec>("runRagChat") {
     group = "application"
+    description = "Run interactive RAG chat with local Ollama model"
 
     classpath = sourceSets["main"].runtimeClasspath
 
-    mainClass.set("ru.maleks.ai_advent_challenge_app.rag.chat.RagChatCliKt")
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.rag.chat.RagChatCliKt"
+    )
 
     standardInput = System.`in`
+
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-Dsun.stdout.encoding=UTF-8",
+        "-Dsun.stderr.encoding=UTF-8"
+    )
 }
 
 tasks.register<JavaExec>("runOllamaDemo") {

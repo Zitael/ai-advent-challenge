@@ -2,35 +2,69 @@ package ru.maleks.ai_advent_challenge_app.rag.chat
 
 class RagTaskMemoryUpdater {
 
-    fun update(userInput: String, memory: RagTaskMemory) {
+    fun update(
+        userInput: String,
+        memory: RagTaskMemory
+    ) {
         val text = userInput.trim()
         val lower = text.lowercase()
 
         when {
-            lower.startsWith("goal:") || lower.startsWith("цель:") -> {
-                val value = text.substringAfter(":").trim()
+            lower.startsWith("goal:") ||
+                    lower.startsWith("цель:") -> {
+
+                val value = text
+                    .substringAfter(":")
+                    .trim()
+
                 if (value.isNotBlank()) {
-                    memory.userClarifications.add("Goal clarified: $value")
+                    memory.goal = value
                 }
             }
 
-            lower.startsWith("term ") || lower.startsWith("термин ") -> {
-                val raw = text.substringAfter(" ").trim()
-                val parts = raw.split("=", limit = 2)
+            lower.startsWith("term ") ||
+                    lower.startsWith("термин ") -> {
+
+                val raw = text
+                    .substringAfter(" ")
+                    .trim()
+
+                val parts = raw.split(
+                    "=",
+                    limit = 2
+                )
+
                 if (parts.size == 2) {
-                    memory.fixedTerms[parts[0].trim()] = parts[1].trim()
+                    val key = parts[0].trim()
+                    val value = parts[1].trim()
+
+                    if (key.isNotBlank() && value.isNotBlank()) {
+                        memory.fixedTerms[key] = value
+                    }
                 }
             }
 
-            lower.startsWith("constraint:") || lower.startsWith("ограничение:") -> {
-                val value = text.substringAfter(":").trim()
-                if (value.isNotBlank()) {
+            lower.startsWith("constraint:") ||
+                    lower.startsWith("ограничение:") -> {
+
+                val value = text
+                    .substringAfter(":")
+                    .trim()
+
+                if (
+                    value.isNotBlank() &&
+                    value !in memory.constraints
+                ) {
                     memory.constraints.add(value)
                 }
             }
 
-            lower.contains("запомни") || lower.contains("уточнение") -> {
-                memory.userClarifications.add(text)
+            lower.contains("запомни") ||
+                    lower.contains("уточнение") -> {
+
+                if (text !in memory.userClarifications) {
+                    memory.userClarifications.add(text)
+                }
             }
         }
     }

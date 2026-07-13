@@ -3,10 +3,10 @@ package ru.maleks.ai_advent_challenge_app.rag.chat
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.jackson.jackson
-import io.ktor.client.plugins.HttpTimeout
-import ru.maleks.ai_advent_challenge_app.llm.OpenRouterClient
+import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaClient
 import ru.maleks.ai_advent_challenge_app.rag.embedding.HashEmbeddingClient
 import ru.maleks.ai_advent_challenge_app.rag.index.DocumentIndexStorage
 import ru.maleks.ai_advent_challenge_app.rag.search.ImprovedRagRetriever
@@ -16,15 +16,17 @@ import java.nio.file.Path
 import kotlin.io.path.writeText
 
 suspend fun main() {
-    val dotenv = dotenv { ignoreIfMissing = true }
+    val dotenv = dotenv {
+        ignoreIfMissing = true
+    }
 
-    val apiKey = dotenv["OPENROUTER_API_KEY"]
-        ?: System.getenv("OPENROUTER_API_KEY")
-        ?: error("OPENROUTER_API_KEY is not set")
+    val ollamaBaseUrl = dotenv["OLLAMA_BASE_URL"]
+        ?: System.getenv("OLLAMA_BASE_URL")
+        ?: "http://localhost:11434"
 
-    val model = dotenv["OPENROUTER_MODEL"]
-        ?: System.getenv("OPENROUTER_MODEL")
-        ?: "openai/gpt-4o-mini"
+    val ollamaModel = dotenv["OLLAMA_MODEL"]
+        ?: System.getenv("OLLAMA_MODEL")
+        ?: "qwen3:8b"
 
     val indexPath = Path.of(
         dotenv["RAG_INDEX_PATH"]
@@ -33,7 +35,10 @@ suspend fun main() {
     )
 
     if (!Files.exists(indexPath)) {
-        error("RAG index not found: $indexPath. Run ./gradlew runRagIndex first.")
+        error(
+            "RAG index not found: $indexPath. " +
+                    "Run ./gradlew runRagIndex first."
+        )
     }
 
     val httpClient = HttpClient(CIO) {
@@ -42,66 +47,93 @@ suspend fun main() {
         }
 
         install(HttpTimeout) {
-            requestTimeoutMillis = 120_000
-            connectTimeoutMillis = 30_000
-            socketTimeoutMillis = 120_000
+            connectTimeoutMillis = 15_000
+            requestTimeoutMillis = 300_000
+            socketTimeoutMillis = 300_000
         }
+
+        expectSuccess = true
     }
 
-    val llmClient = OpenRouterClient(
+    val ollamaClient = OllamaClient(
         httpClient = httpClient,
-        apiKey = apiKey,
-        model = model
+        baseUrl = ollamaBaseUrl.removeSuffix("/"),
+        model = ollamaModel
     )
 
-    val embeddingClient = HashEmbeddingClient(dimension = 384)
+    val embeddingClient = HashEmbeddingClient(
+        dimension = 384
+    )
+
     val index = DocumentIndexStorage().load(indexPath)
-    val searchService = VectorSearchService(embeddingClient)
-    val retriever = ImprovedRagRetriever(searchService)
+
+    val searchService = VectorSearchService(
+        embeddingClient = embeddingClient
+    )
+
+    val retriever = ImprovedRagRetriever(
+        vectorSearchService = searchService
+    )
+
     val storage = RagChatStorage()
+
     val service = RagChatService(
-        llmClient = llmClient,
+        ollamaClient = ollamaClient,
         index = index,
         retriever = retriever
     )
 
     var state = storage.load()
 
-    println("AI Advent Challenge - Day 25")
-    println("Mini RAG chat started.")
+    val reader = System.`in`.bufferedReader()
 
-    println("Commands:")
-    println("  /exit")
-    println("  /clear")
-    println("  /memory")
-    println("  /report")
+    println("AI Advent Challenge - Day 27")
+    println("Local RAG Chat")
+    println("Ollama URL: $ollamaBaseUrl")
+    println("Local model: $ollamaModel")
+    println("Cloud LLM: disabled")
+    println("RAG index: ${indexPath.toAbsolutePath()}")
     println()
-    println("Tip:")
-    println("  goal: explain RAG architecture")
-    println("  term RAG=Retrieval Augmented Generation")
-    println("  constraint: always compare with MCP")
+    println("Commands:")
+    println("  /clear  - clear chat history and task memory")
+    println("  /memory - show task memory")
+    println("  /report - save readable Markdown report")
+    println("  /exit   - exit chat")
+    println()
+    println("Task memory commands:")
+    println("  goal: <dialog goal>")
+    println("  term <name>=<definition>")
+    println("  constraint: <constraint>")
     println()
 
     try {
         while (true) {
             print("You: ")
-            val input = readlnOrNull()?.trim()
+            System.out.flush()
 
-            if (input == null) {
-                println("Input stream closed. Use /report file mode or run from real terminal.")
+            val rawInput = reader.readLine()
+
+            if (rawInput == null) {
+                println()
+                println("Input stream closed.")
                 break
             }
+
+            val input = rawInput.trim()
 
             if (input.isBlank()) {
                 continue
             }
 
             when {
-                input.equals("/exit", ignoreCase = true) -> break
+                input.equals("/exit", ignoreCase = true) -> {
+                    break
+                }
 
                 input.equals("/clear", ignoreCase = true) -> {
                     storage.clear()
                     state = RagChatState()
+
                     println("Chat state cleared.")
                     continue
                 }
@@ -112,96 +144,185 @@ suspend fun main() {
                 }
 
                 input.equals("/report", ignoreCase = true) -> {
-                    saveReport(state)
-                    println("Report saved to rag-index/day25-rag-chat-report.md")
+                    saveReport(
+                        state = state,
+                        ollamaModel = ollamaModel,
+                        ollamaBaseUrl = ollamaBaseUrl
+                    )
+
+                    println(
+                        "Report saved to " +
+                                "rag-index/day27-local-rag-chat-report.md"
+                    )
                     continue
                 }
             }
 
+            println()
+            println("Local model is generating an answer...")
 
-            val answer = try {
-                service.handle(input, state)
-            } catch (e: Exception) {
-                """
-                    ## Ответ
-                    Ошибка при обращении к LLM: ${e.message}
+            val answer = service.handle(
+                userInput = input,
+                state = state
+            )
 
-                    ## Источники
-                    - не использовались
-
-                    ## Цитаты
-                    - отсутствуют
-                """.trimIndent()
-            }
             storage.save(state)
 
             println()
-            println("========================================")
-            println("Assistant")
-            println("========================================")
+            println("Assistant:")
             println(answer)
             println()
         }
     } finally {
-        saveReport(state)
+        saveReport(
+            state = state,
+            ollamaModel = ollamaModel,
+            ollamaBaseUrl = ollamaBaseUrl
+        )
+
         httpClient.close()
+
+        println()
+        println(
+            "Final report saved to " +
+                    "rag-index/day27-local-rag-chat-report.md"
+        )
     }
 }
 
 private fun printMemory(state: RagChatState) {
     println()
     println("========== TASK MEMORY ==========")
+
+    println("Goal:")
+    println(
+        state.taskMemory.goal.ifBlank {
+            "not specified"
+        }
+    )
+
+    println()
     println("Fixed terms:")
-    state.taskMemory.fixedTerms.forEach { (key, value) ->
-        println("- $key = $value")
+
+    if (state.taskMemory.fixedTerms.isEmpty()) {
+        println("- none")
+    } else {
+        state.taskMemory.fixedTerms.forEach { (key, value) ->
+            println("- $key = $value")
+        }
     }
 
+    println()
     println("Constraints:")
-    state.taskMemory.constraints.forEach {
-        println("- $it")
+
+    if (state.taskMemory.constraints.isEmpty()) {
+        println("- none")
+    } else {
+        state.taskMemory.constraints.forEach { constraint ->
+            println("- $constraint")
+        }
     }
 
+    println()
     println("Clarifications:")
-    state.taskMemory.userClarifications.forEach {
-        println("- $it")
+
+    if (state.taskMemory.userClarifications.isEmpty()) {
+        println("- none")
+    } else {
+        state.taskMemory.userClarifications.forEach { clarification ->
+            println("- $clarification")
+        }
     }
 
-    println("Messages: ${state.messages.size}")
+    println()
+    println("Stored messages: ${state.messages.size}")
     println("=================================")
     println()
 }
 
-private fun saveReport(state: RagChatState) {
+private fun saveReport(
+    state: RagChatState,
+    ollamaModel: String,
+    ollamaBaseUrl: String
+) {
     val outputDirectory = Path.of("rag-index")
     Files.createDirectories(outputDirectory)
 
+    val fixedTerms = state.taskMemory.fixedTerms.entries
+        .joinToString("\n") { entry ->
+            "- ${entry.key}: ${entry.value}"
+        }
+        .ifBlank {
+            "- none"
+        }
+
+    val constraints = state.taskMemory.constraints
+        .joinToString("\n") { constraint ->
+            "- $constraint"
+        }
+        .ifBlank {
+            "- none"
+        }
+
+    val clarifications = state.taskMemory.userClarifications
+        .joinToString("\n") { clarification ->
+            "- $clarification"
+        }
+        .ifBlank {
+            "- none"
+        }
+
+    val dialog = state.messages
+        .joinToString("\n\n") { message ->
+            """
+                ### ${message.role} — ${message.createdAt}
+
+                ${message.content}
+            """.trimIndent()
+        }
+        .ifBlank {
+            "Dialog is empty."
+        }
+
     val report = """
-        # Day 25 — Mini RAG chat with task memory
+        # Day 27 — Local LLM application
+
+        ## Configuration
+
+        - application: local RAG CLI chat
+        - LLM provider: Ollama
+        - model: `$ollamaModel`
+        - API: `$ollamaBaseUrl`
+        - cloud models: disabled
+        - stored messages: ${state.messages.size}
 
         ## Task memory
 
+        ### Goal
+
+        ${state.taskMemory.goal.ifBlank { "not specified" }}
+
         ### Fixed terms
 
-        ${state.taskMemory.fixedTerms.entries.joinToString("\n") { "- ${it.key}: ${it.value}" }.ifBlank { "- none" }}
+        $fixedTerms
 
         ### Constraints
 
-        ${state.taskMemory.constraints.joinToString("\n") { "- $it" }.ifBlank { "- none" }}
+        $constraints
 
         ### User clarifications
 
-        ${state.taskMemory.userClarifications.joinToString("\n") { "- $it" }.ifBlank { "- none" }}
+        $clarifications
 
-        ## Dialog history
+        ## Dialog
 
-        ${state.messages.joinToString("\n\n") { message ->
-        """
-            ### ${message.role} — ${message.createdAt}
-
-            ${message.content}
-            """.trimIndent()
-    }}
+        $dialog
     """.trimIndent()
 
-    outputDirectory.resolve("day25-rag-chat-report.md").writeText(report, Charsets.UTF_8)
+    outputDirectory
+        .resolve("day27-local-rag-chat-report.md")
+        .writeText(
+            report,
+            Charsets.UTF_8
+        )
 }
