@@ -16,8 +16,13 @@ dependencies {
     implementation("io.ktor:ktor-client-core:3.3.0")
     implementation("io.ktor:ktor-client-cio:3.3.0")
     implementation("io.ktor:ktor-client-content-negotiation:3.3.0")
-    implementation("io.ktor:ktor-serialization-jackson:3.3.0")
+
+    implementation("io.ktor:ktor-server-core:3.3.0")
     implementation("io.ktor:ktor-server-cio:3.3.0")
+    implementation("io.ktor:ktor-server-content-negotiation:3.3.0")
+    implementation("io.ktor:ktor-server-status-pages:3.3.0")
+
+    implementation("io.ktor:ktor-serialization-jackson:3.3.0")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.19.2")
 
@@ -91,5 +96,16 @@ tasks.register<JavaExec>("runOllamaOptimization") {
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set(
         "ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaOptimizationCliKt"
+    )
+}
+
+tasks.register<JavaExec>("runPrivateAiServer") {
+    group = "application"
+    description = "Run private HTTP API backed by local Ollama"
+
+    classpath = sourceSets["main"].runtimeClasspath
+
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.privateai.PrivateAiServerKt"
     )
 }

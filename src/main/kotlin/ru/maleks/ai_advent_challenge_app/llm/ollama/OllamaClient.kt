@@ -6,6 +6,8 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.system.measureTimeMillis
 
 class OllamaClient(
@@ -25,55 +27,148 @@ class OllamaClient(
         prompt: String,
         config: OllamaGenerationConfig
     ): OllamaDemoResult {
+        return complete(
+            messages = listOf(
+                OllamaMessage(
+                    role = "user",
+                    content = prompt
+                )
+            ),
+            config = config
+        )
+    }
+
+    suspend fun complete(
+        messages: List<OllamaMessage>,
+        config: OllamaGenerationConfig
+    ): OllamaDemoResult {
+        require(messages.isNotEmpty()) {
+            "At least one message is required"
+        }
+
+        val requestUrl = "$baseUrl/api/chat"
+
+        log("Preparing Ollama request")
+        log("URL: $requestUrl")
+        log("Model: $model")
+        log("Profile: ${config.name}")
+        log("Messages: ${messages.size}")
+        log("Thinking enabled: ${config.think}")
+        log("Temperature: ${config.options.temperature}")
+        log("Max generated tokens: ${config.options.num_predict}")
+        log("Context window: ${config.options.num_ctx}")
+        log("Keep alive: ${config.keepAlive}")
+        log("Sending HTTP request...")
+
         var response: OllamaChatResponse? = null
 
-        val clientDurationMillis = measureTimeMillis {
-            response = httpClient.post("$baseUrl/api/chat") {
-                contentType(ContentType.Application.Json)
+        val clientDurationMillis = try {
+            measureTimeMillis {
+                response = httpClient.post(requestUrl) {
+                    contentType(ContentType.Application.Json)
 
-                setBody(
-                    OllamaChatRequest(
-                        model = model,
-                        messages = listOf(
-                            OllamaMessage(
-                                role = "user",
-                                content = prompt
-                            )
-                        ),
-                        stream = false,
-                        think = config.think,
-                        options = config.options,
-                        keep_alive = config.keepAlive
+                    setBody(
+                        OllamaChatRequest(
+                            model = model,
+                            messages = messages,
+                            stream = false,
+                            think = config.think,
+                            options = config.options,
+                            keep_alive = config.keepAlive
+                        )
                     )
-                )
-            }.body()
+                }.body()
+            }
+        } catch (exception: Exception) {
+            log(
+                "Ollama request failed: " +
+                        "${exception::class.simpleName}: " +
+                        "${exception.message}"
+            )
+
+            throw exception
         }
+
+        log(
+            "HTTP response received in " +
+                    "$clientDurationMillis ms"
+        )
 
         val actualResponse = checkNotNull(response) {
             "Ollama returned no response"
         }
 
+        log("Response model: ${actualResponse.model}")
+        log("Done: ${actualResponse.done}")
+        log(
+            "Done reason: " +
+                    "${actualResponse.doneReason ?: "unknown"}"
+        )
+        log(
+            "Prompt tokens: " +
+                    "${actualResponse.promptEvalCount ?: "unknown"}"
+        )
+        log(
+            "Generated tokens: " +
+                    "${actualResponse.evalCount ?: "unknown"}"
+        )
+        log(
+            "Model load duration: " +
+                    actualResponse.loadDuration.toMillisText()
+        )
+        log(
+            "Prompt evaluation duration: " +
+                    actualResponse.promptEvalDuration.toMillisText()
+        )
+        log(
+            "Generation duration: " +
+                    actualResponse.evalDuration.toMillisText()
+        )
+        log(
+            "Total Ollama duration: " +
+                    actualResponse.totalDuration.toMillisText()
+        )
+
+        val tokensPerSecond = calculateTokensPerSecond(
+            tokenCount = actualResponse.evalCount,
+            durationNanoseconds = actualResponse.evalDuration
+        )
+
+        log(
+            "Generation speed: " +
+                    tokensPerSecond.formatTokensPerSecond()
+        )
+        log(
+            "Answer length: " +
+                    "${actualResponse.message.content.length} chars"
+        )
+
         return OllamaDemoResult(
             profile = config.name,
-            prompt = prompt,
+            prompt = messages.last().content,
             answer = actualResponse.message.content.ifBlank {
                 "Ollama returned an empty answer"
             },
             model = actualResponse.model.ifBlank { model },
             clientDurationMillis = clientDurationMillis,
-            totalDurationMillis = actualResponse.totalDuration.toMillis(),
-            loadDurationMillis = actualResponse.loadDuration.toMillis(),
+            totalDurationMillis =
+                actualResponse.totalDuration.toMillis(),
+            loadDurationMillis =
+                actualResponse.loadDuration.toMillis(),
             promptTokens = actualResponse.promptEvalCount,
             generatedTokens = actualResponse.evalCount,
-            tokensPerSecond = calculateTokensPerSecond(
-                tokenCount = actualResponse.evalCount,
-                durationNanoseconds = actualResponse.evalDuration
-            )
+            tokensPerSecond = tokensPerSecond
         )
     }
 
     private fun Long?.toMillis(): Long? {
         return this?.div(1_000_000)
+    }
+
+    private fun Long?.toMillisText(): String {
+        return this?.let {
+            "${it / 1_000_000} ms"
+        } ?: "unknown"
     }
 
     private fun calculateTokensPerSecond(
@@ -88,8 +183,30 @@ class OllamaClient(
             return null
         }
 
-        val durationSeconds = durationNanoseconds / 1_000_000_000.0
+        val durationSeconds =
+            durationNanoseconds / 1_000_000_000.0
 
         return tokenCount / durationSeconds
+    }
+
+    private fun Double?.formatTokensPerSecond(): String {
+        return this?.let {
+            "%.2f tokens/sec".format(it)
+        } ?: "unknown"
+    }
+
+    private fun log(message: String) {
+        println(
+            "[${currentTimestamp()}] [OLLAMA] $message"
+        )
+    }
+
+    private fun currentTimestamp(): String {
+        return LocalDateTime.now().format(LOG_TIME_FORMAT)
+    }
+
+    private companion object {
+        val LOG_TIME_FORMAT: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
     }
 }
