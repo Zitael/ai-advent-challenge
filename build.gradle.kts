@@ -84,3 +84,12 @@ tasks.register<JavaExec>("runOllamaDemo") {
         "ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaDemoCliKt"
     )
 }
+
+tasks.register<JavaExec>("runOllamaOptimization") {
+    group = "application"
+    description = "Compare baseline and optimized Ollama profiles"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaOptimizationCliKt"
+    )
+}

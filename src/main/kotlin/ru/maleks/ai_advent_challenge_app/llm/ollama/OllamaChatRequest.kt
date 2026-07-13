@@ -4,6 +4,7 @@ data class OllamaChatRequest(
     val model: String,
     val messages: List<OllamaMessage>,
     val stream: Boolean = false,
+    val think: Boolean = false,
     val options: OllamaOptions = OllamaOptions(),
     val keep_alive: String = "10m"
 )

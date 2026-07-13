@@ -15,6 +15,16 @@ class OllamaClient(
 ) {
 
     suspend fun complete(prompt: String): OllamaDemoResult {
+        return complete(
+            prompt = prompt,
+            config = OllamaOptimizationProfiles.baseline
+        )
+    }
+
+    suspend fun complete(
+        prompt: String,
+        config: OllamaGenerationConfig
+    ): OllamaDemoResult {
         var response: OllamaChatResponse? = null
 
         val clientDurationMillis = measureTimeMillis {
@@ -31,11 +41,9 @@ class OllamaClient(
                             )
                         ),
                         stream = false,
-                        options = OllamaOptions(
-                            temperature = 0.7,
-                            num_predict = 700
-                        ),
-                        keep_alive = "10m"
+                        think = config.think,
+                        options = config.options,
+                        keep_alive = config.keepAlive
                     )
                 )
             }.body()
@@ -46,6 +54,7 @@ class OllamaClient(
         }
 
         return OllamaDemoResult(
+            profile = config.name,
             prompt = prompt,
             answer = actualResponse.message.content.ifBlank {
                 "Ollama returned an empty answer"
