@@ -127,3 +127,14 @@ tasks.register<JavaExec>("reviewPullRequest") {
         "ru.maleks.ai_advent_challenge_app.developer.PullRequestReviewMainKt"
     )
 }
+
+
+tasks.register<JavaExec>("runSupportAssistant") {
+    group = "application"
+    description = "Run Day 33 support assistant with RAG and CRM MCP"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.support.SupportAssistantCliKt"
+    )
+    standardInput = System.`in`
+}

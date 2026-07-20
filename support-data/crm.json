@@ -1,0 +1,72 @@
+{
+  "users": [
+    {
+      "id": "U-101",
+      "name": "Анна Смирнова",
+      "email": "anna@example.com",
+      "plan": "PRO",
+      "status": "ACTIVE",
+      "locale": "ru-RU",
+      "lastLoginAt": "2026-07-19T18:42:00Z",
+      "failedLoginAttempts": 6,
+      "twoFactorEnabled": true
+    },
+    {
+      "id": "U-102",
+      "name": "Иван Петров",
+      "email": "ivan@example.com",
+      "plan": "FREE",
+      "status": "ACTIVE",
+      "locale": "ru-RU",
+      "lastLoginAt": "2026-07-18T09:15:00Z",
+      "failedLoginAttempts": 0,
+      "twoFactorEnabled": false
+    }
+  ],
+  "tickets": [
+    {
+      "id": "T-1001",
+      "userId": "U-101",
+      "subject": "Не работает авторизация",
+      "description": "После смены телефона не могу войти. Код подтверждения не приходит.",
+      "status": "OPEN",
+      "priority": "HIGH",
+      "createdAt": "2026-07-20T01:30:00Z",
+      "tags": ["login", "2fa", "sms"],
+      "events": [
+        {
+          "timestamp": "2026-07-20T01:21:00Z",
+          "type": "LOGIN_FAILED",
+          "details": "Invalid one-time code"
+        },
+        {
+          "timestamp": "2026-07-20T01:24:00Z",
+          "type": "LOGIN_FAILED",
+          "details": "Invalid one-time code"
+        },
+        {
+          "timestamp": "2026-07-20T01:27:00Z",
+          "type": "ACCOUNT_TEMPORARILY_LOCKED",
+          "details": "Too many failed authentication attempts; lock expires in 30 minutes"
+        }
+      ]
+    },
+    {
+      "id": "T-1002",
+      "userId": "U-102",
+      "subject": "Не загружается отчёт",
+      "description": "Экспорт PDF зависает на 90 процентах.",
+      "status": "OPEN",
+      "priority": "MEDIUM",
+      "createdAt": "2026-07-20T02:10:00Z",
+      "tags": ["report", "pdf", "export"],
+      "events": [
+        {
+          "timestamp": "2026-07-20T02:08:00Z",
+          "type": "EXPORT_FAILED",
+          "details": "Report contains 12842 rows; free plan export limit is 10000 rows"
+        }
+      ]
+    }
+  ]
+}
