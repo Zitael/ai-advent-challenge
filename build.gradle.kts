@@ -138,3 +138,13 @@ tasks.register<JavaExec>("runSupportAssistant") {
     )
     standardInput = System.`in`
 }
+
+tasks.register<JavaExec>("runProjectFileAssistant") {
+    group = "application"
+    description = "Run Day 34 assistant that searches, analyzes and modifies project files"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.projectfiles.ProjectFileAssistantCliKt"
+    )
+    standardInput = System.`in`
+}
