@@ -10,6 +10,8 @@ class DeveloperAssistant(
     private val index: DocumentIndex,
     private val retriever: ImprovedRagRetriever,
     private val gitProjectClient: GitProjectClient,
+    private val codeReviewService: CodeReviewService,
+    private val gitDiffProvider: GitDiffProvider,
     private val contextBuilder: GroundedRagContextBuilder = GroundedRagContextBuilder(
         minBestScore = 0.08,
         minSources = 1
@@ -48,6 +50,37 @@ class DeveloperAssistant(
         )
 
         return ollamaClient.complete(prompt).answer
+    }
+
+    suspend fun reviewLocalChanges(): String {
+        val changes = gitDiffProvider.localChanges()
+
+        if (changes.changedFiles.isEmpty()) {
+            return """
+            Нет изменений для ревью.
+
+            Git repository:
+            ${changes.repositoryRoot}
+
+            Проверь в этом каталоге:
+            git status --short
+        """.trimIndent()
+        }
+
+        println(
+            "Git repository: ${changes.repositoryRoot}"
+        )
+        println(
+            "Changed files: ${changes.changedFiles.size}"
+        )
+        println(
+            "Diff size: ${changes.diff.length} characters"
+        )
+
+        return codeReviewService.review(
+            diff = changes.diff,
+            changedFiles = changes.changedFiles
+        )
     }
 
     suspend fun currentBranch(): String = gitProjectClient.currentBranch()

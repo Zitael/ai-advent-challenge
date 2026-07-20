@@ -11,6 +11,7 @@ import ru.maleks.ai_advent_challenge_app.mcp.client.McpServerConfig
 import ru.maleks.ai_advent_challenge_app.mcp.client.RemoteMcpClient
 import ru.maleks.ai_advent_challenge_app.mcp.project.ProjectMcpServerFactory
 import ru.maleks.ai_advent_challenge_app.mcp.project.ProjectMcpServerRunner
+import ru.maleks.ai_advent_challenge_app.rag.chunk.FixedSizeChunker
 import ru.maleks.ai_advent_challenge_app.rag.chunk.MarkdownStructureChunker
 import ru.maleks.ai_advent_challenge_app.rag.embedding.HashEmbeddingClient
 import ru.maleks.ai_advent_challenge_app.rag.index.DocumentIndexer
@@ -39,18 +40,31 @@ suspend fun main() {
         ?: System.getenv("PROJECT_MCP_PORT")
         ?: "3010").toInt()
 
-    val documents = ProjectDocumentLoader(projectRoot).load()
-    require(documents.isNotEmpty()) {
+    val documentation = ProjectDocumentLoader(projectRoot).load()
+    require(documentation.isNotEmpty()) {
         "No project documentation found. Add README.md and files to docs/."
     }
 
-    println("Indexing project documentation...")
+    val codeDocuments = ProjectCodeLoader(projectRoot).load()
+
+    println("Indexing project documentation and code...")
     val embeddingClient = HashEmbeddingClient(dimension = 384)
-    val index = DocumentIndexer(embeddingClient).buildIndex(
-        documents = documents,
+    val documentIndexer = DocumentIndexer(embeddingClient)
+
+    val documentationIndex = documentIndexer.buildIndex(
+        documents = documentation,
         strategy = MarkdownStructureChunker(
             maxSectionWords = 350,
             overlapWords = 40
+        ),
+        sourceDirectory = projectRoot.toString()
+    )
+
+    val codeIndex = documentIndexer.buildIndex(
+        documents = codeDocuments,
+        strategy = FixedSizeChunker(
+            chunkSizeWords = 260,
+            overlapWords = 50
         ),
         sourceDirectory = projectRoot.toString()
     )
@@ -91,21 +105,31 @@ suspend fun main() {
         )
     )
 
+    val codeReviewService = CodeReviewService(
+        ollamaClient = ollamaClient,
+        documentationIndex = documentationIndex,
+        codeIndex = codeIndex,
+        retriever = retriever
+    )
+
     val assistant = DeveloperAssistant(
         ollamaClient = ollamaClient,
-        index = index,
+        index = documentationIndex,
         retriever = retriever,
-        gitProjectClient = GitProjectClient(mcpClient)
+        gitProjectClient = GitProjectClient(mcpClient),
+        codeReviewService = codeReviewService,
+        gitDiffProvider = GitDiffProvider(projectRoot)
     )
 
     val parser = DeveloperCommandParser()
     val reader = System.`in`.bufferedReader()
 
     println()
-    println("AI Advent Challenge — Day 31")
-    println("Developer Assistant")
+    println("AI Advent Challenge — Day 32")
+    println("Developer Assistant with AI Code Review")
     println("Project: $projectRoot")
-    println("Indexed docs: ${documents.size}")
+    println("Indexed docs: ${documentation.size}")
+    println("Indexed code files: ${codeDocuments.size}")
     println("Model: $ollamaModel")
     println("MCP: ${mcpServer.url}")
     printCommands()
@@ -125,6 +149,10 @@ suspend fun main() {
                 DeveloperCommand.Status -> println(assistant.status())
                 DeveloperCommand.Diff -> println(assistant.diff())
                 DeveloperCommand.Files -> println(assistant.files())
+                DeveloperCommand.Review -> {
+                    println("\nReviewing staged and unstaged changes...")
+                    println("\nAssistant:\n${assistant.reviewLocalChanges()}")
+                }
                 is DeveloperCommand.Help -> {
                     println("\nSearching README and docs...")
                     println("\nAssistant:\n${assistant.answerProjectQuestion(command.question)}")
@@ -145,6 +173,7 @@ private fun printCommands() {
     println()
     println("Commands:")
     println("  /help <question> — answer using README and docs")
+    println("  /review          — review staged and unstaged local changes")
     println("  /branch          — current git branch through MCP")
     println("  /status          — git status through MCP")
     println("  /diff            — current git diff through MCP")

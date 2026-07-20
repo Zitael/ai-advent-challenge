@@ -12,35 +12,22 @@ class DeveloperCommandParser {
             return DeveloperCommand.Unknown("")
         }
 
-        val commandName = normalized
-            .substringBefore(' ')
-            .lowercase()
-
-        val argument = normalized
-            .substringAfter(' ', missingDelimiterValue = "")
-            .trim()
+        val commandName = normalized.substringBefore(' ').lowercase()
+        val argument = normalized.substringAfter(' ', missingDelimiterValue = "").trim()
 
         return when (commandName) {
             "exit", "quit" -> DeveloperCommand.Exit
-
             "commands", "command" -> DeveloperCommand.Commands
-
             "branch" -> DeveloperCommand.Branch
-
             "status" -> DeveloperCommand.Status
-
             "diff" -> DeveloperCommand.Diff
-
             "files" -> DeveloperCommand.Files
-
-            "help" -> {
-                if (argument.isBlank()) {
-                    DeveloperCommand.Commands
-                } else {
-                    DeveloperCommand.Help(argument)
-                }
+            "review" -> DeveloperCommand.Review
+            "help" -> if (argument.isBlank()) {
+                DeveloperCommand.Commands
+            } else {
+                DeveloperCommand.Help(argument)
             }
-
             else -> DeveloperCommand.Unknown(input.trim())
         }
     }
