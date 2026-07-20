@@ -148,3 +148,18 @@ tasks.register<JavaExec>("runProjectFileAssistant") {
     )
     standardInput = System.`in`
 }
+
+tasks.register<JavaExec>("prepareRelease") {
+    group = "application"
+    description = "Run Day 35 AI release preparation pipeline"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.release.ReleaseAssistantCliKt"
+    )
+    args(
+        providers.gradleProperty("releaseVersion").getOrElse("day35-local")
+    )
+    if (providers.gradleProperty("skipChecks").orNull == "true") {
+        args("--skip-checks")
+    }
+}

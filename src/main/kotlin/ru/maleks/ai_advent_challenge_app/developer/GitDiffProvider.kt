@@ -282,7 +282,6 @@ class GitDiffProvider(
 
         val process = ProcessBuilder(command)
             .directory(workingDirectory.toFile())
-            .redirectErrorStream(true)
             .apply {
                 environment()["GIT_PAGER"] = "cat"
                 environment()["PAGER"] = "cat"
@@ -290,22 +289,22 @@ class GitDiffProvider(
             }
             .start()
 
-        val executor =
-            Executors.newSingleThreadExecutor { runnable ->
-                Thread(
-                    runnable,
-                    "git-output-reader"
-                ).apply {
-                    isDaemon = true
-                }
+        val executor = Executors.newFixedThreadPool(2) { runnable ->
+            Thread(runnable, "git-output-reader").apply {
+                isDaemon = true
             }
+        }
 
-        val outputFuture = executor.submit<String> {
+        val stdoutFuture = executor.submit<String> {
             process.inputStream
                 .bufferedReader()
-                .use { reader ->
-                    reader.readText()
-                }
+                .use { reader -> reader.readText() }
+        }
+
+        val stderrFuture = executor.submit<String> {
+            process.errorStream
+                .bufferedReader()
+                .use { reader -> reader.readText() }
         }
 
         try {
@@ -328,11 +327,18 @@ class GitDiffProvider(
 
                 error(
                     "Git command timed out: " +
-                            args.joinToString(" ")
+                        args.joinToString(" ")
                 )
             }
 
-            val output = outputFuture
+            val stdout = stdoutFuture
+                .get(
+                    OUTPUT_TIMEOUT_SECONDS,
+                    TimeUnit.SECONDS
+                )
+                .trim()
+
+            val stderr = stderrFuture
                 .get(
                     OUTPUT_TIMEOUT_SECONDS,
                     TimeUnit.SECONDS
@@ -347,13 +353,17 @@ class GitDiffProvider(
                     append("): ")
                     appendLine(args.joinToString(" "))
 
-                    if (output.isNotBlank()) {
-                        append(output)
+                    if (stderr.isNotBlank()) {
+                        appendLine(stderr)
                     }
-                }
+
+                    if (stdout.isNotBlank()) {
+                        append(stdout)
+                    }
+                }.trim()
             }
 
-            return output
+            return stdout
         } finally {
             executor.shutdownNow()
         }
