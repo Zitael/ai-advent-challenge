@@ -109,3 +109,12 @@ tasks.register<JavaExec>("runPrivateAiServer") {
         "ru.maleks.ai_advent_challenge_app.privateai.PrivateAiServerKt"
     )
 }
+tasks.register<JavaExec>("runDeveloperAssistant") {
+    group = "application"
+    description = "Run Day 31 developer assistant with project RAG and Git MCP"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.developer.DeveloperAssistantCliKt"
+    )
+    standardInput = System.`in`
+}
