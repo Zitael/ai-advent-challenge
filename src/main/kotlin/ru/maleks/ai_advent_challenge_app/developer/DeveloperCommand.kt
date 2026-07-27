@@ -7,6 +7,9 @@ sealed interface DeveloperCommand {
     data object Diff : DeveloperCommand
     data object Files : DeveloperCommand
     data object Review : DeveloperCommand
+    data class BugFix(val task: String) : DeveloperCommand
+    data class Research(val question: String) : DeveloperCommand
+    data class Architecture(val task: String) : DeveloperCommand
     data object Commands : DeveloperCommand
     data object Exit : DeveloperCommand
     data class Unknown(val raw: String) : DeveloperCommand

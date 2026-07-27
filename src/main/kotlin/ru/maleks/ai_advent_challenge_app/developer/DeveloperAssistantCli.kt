@@ -7,6 +7,9 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.jackson.jackson
 import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaClient
+import ru.maleks.ai_advent_challenge_app.developer.profile.AssistantProfile
+import ru.maleks.ai_advent_challenge_app.developer.profile.ProfileAssistant
+import ru.maleks.ai_advent_challenge_app.developer.profile.ProfileContextCollector
 import ru.maleks.ai_advent_challenge_app.mcp.client.McpServerConfig
 import ru.maleks.ai_advent_challenge_app.mcp.client.RemoteMcpClient
 import ru.maleks.ai_advent_challenge_app.mcp.project.ProjectMcpServerFactory
@@ -121,6 +124,16 @@ suspend fun main() {
         gitDiffProvider = GitDiffProvider(projectRoot)
     )
 
+    val profileAssistant = ProfileAssistant(
+        ollamaClient = ollamaClient,
+        contextCollector = ProfileContextCollector(
+            projectRoot = projectRoot,
+            documentationIndex = documentationIndex,
+            codeIndex = codeIndex,
+            retriever = retriever
+        )
+    )
+
     val parser = DeveloperCommandParser()
     val reader = System.`in`.bufferedReader()
 
@@ -153,6 +166,21 @@ suspend fun main() {
                     println("\nReviewing staged and unstaged changes...")
                     println("\nAssistant:\n${assistant.reviewLocalChanges()}")
                 }
+                is DeveloperCommand.BugFix -> {
+                    println("\nProfile: Bug Fix")
+                    println("Collecting code, logs, dependencies and running tests...")
+                    println("\nAssistant:\n${profileAssistant.execute(AssistantProfile.BugFix, command.task)}")
+                }
+                is DeveloperCommand.Research -> {
+                    println("\nProfile: Research")
+                    println("Researching documentation, code and dependencies...")
+                    println("\nAssistant:\n${profileAssistant.execute(AssistantProfile.Research, command.question)}")
+                }
+                is DeveloperCommand.Architecture -> {
+                    println("\nProfile: Architecture Review")
+                    println("Searching for existing extension points and analogues...")
+                    println("\nAssistant:\n${profileAssistant.execute(AssistantProfile.Architecture, command.task)}")
+                }
                 is DeveloperCommand.Help -> {
                     println("\nSearching README and docs...")
                     println("\nAssistant:\n${assistant.answerProjectQuestion(command.question)}")
@@ -174,6 +202,9 @@ private fun printCommands() {
     println("Commands:")
     println("  /help <question> — answer using README and docs")
     println("  /review          — review staged and unstaged local changes")
+    println("  /bugfix <bug>    — find a cause, propose a fix and run tests")
+    println("  /research <q>    — investigate the codebase without changing code")
+    println("  /architecture <task> — design a change using existing project architecture")
     println("  /branch          — current git branch through MCP")
     println("  /status          — git status through MCP")
     println("  /diff            — current git diff through MCP")

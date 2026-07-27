@@ -23,6 +23,9 @@ class DeveloperCommandParser {
             "diff" -> DeveloperCommand.Diff
             "files" -> DeveloperCommand.Files
             "review" -> DeveloperCommand.Review
+            "bugfix" -> if (argument.isBlank()) DeveloperCommand.Commands else DeveloperCommand.BugFix(argument)
+            "research" -> if (argument.isBlank()) DeveloperCommand.Commands else DeveloperCommand.Research(argument)
+            "architecture" -> if (argument.isBlank()) DeveloperCommand.Commands else DeveloperCommand.Architecture(argument)
             "help" -> if (argument.isBlank()) {
                 DeveloperCommand.Commands
             } else {
