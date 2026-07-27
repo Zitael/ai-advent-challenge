@@ -36,3 +36,5 @@
   - `runPrivateAiServer`
   - `runDeveloperAssistant`
   - `reviewPullRequest`
+
+Summary: The project defines an interface `LlmClient` and a class `OllamaClient` that implements it. These are used to interact with LLMs, specifically Ollama models, across various services and CLI tasks.
