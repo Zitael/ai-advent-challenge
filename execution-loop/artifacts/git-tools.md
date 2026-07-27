@@ -20,7 +20,7 @@ The project uses two approaches for interacting with Git: **MCP-based** (via `Gi
 
 ## Связи и поток данных
 - The `DeveloperAssistant` class uses both `GitProjectClient` and `GitDiffProvider` to get git information.
-- The `PullRequestReviewMain` class uses `GitDiffProvider` to get pull request changes.
+- The `PullRequestReviewMain` class uses `GitDiff,Provider` to get pull request changes.
 - The `ReleaseAssistant` class uses `GitDiffProvider` for release-related git operations.
 
 ## Выводы
