@@ -1,0 +1,139 @@
+name: AI Advent Local Boost
+version: 1.0.0
+schema: v1
+
+models:
+  - name: Qwen 2.5 Coder Autocomplete
+    provider: ollama
+    model: qwen2.5-coder:1.5b-base
+    apiBase: http://localhost:11434
+    roles:
+      - autocomplete
+
+    autocompleteOptions:
+      debounceDelay: 250
+      maxPromptTokens: 1024
+      onlyMyCode: true
+
+    defaultCompletionOptions:
+      contextLength: 4096
+      maxTokens: 256
+      temperature: 0.05
+      topP: 0.8
+
+  - name: Qwen 2.5 Coder 7B
+    provider: ollama
+    model: ai-advent-qwen-coder:7b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+
+    defaultCompletionOptions:
+      contextLength: 16384
+      maxTokens: 4096
+      temperature: 0.1
+      topP: 0.8
+
+    chatOptions:
+      baseSystemMessage: |
+        Follow all workspace rules.
+
+        Inspect relevant source files, tests, documentation and Gradle
+        configuration before proposing changes.
+
+        Do not invent:
+        - files;
+        - APIs;
+        - dependencies;
+        - command output;
+        - successful test results.
+
+        Prefer minimal Kotlin changes that preserve the current architecture.
+
+        Return complete contents of changed Kotlin files when explicitly asked.
+
+      baseAgentSystemMessage: |
+        Work as a cautious senior Kotlin backend engineer.
+
+        Follow this workflow:
+
+        Research
+        Plan
+        Implementation
+        Validation
+
+        Before editing:
+        - inspect project rules;
+        - inspect relevant source files;
+        - inspect existing tests;
+        - inspect Gradle dependencies;
+        - inspect the current git diff.
+
+        Make the smallest coherent change.
+
+        Run relevant verification commands.
+
+        Never claim that a command passed unless it actually completed
+        successfully.
+
+  - name: Qwen 2.5 Coder 14B
+    provider: ollama
+    model: ai-advent-qwen-coder:14b
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+
+    defaultCompletionOptions:
+      contextLength: 16384
+      maxTokens: 4096
+      temperature: 0.1
+      topP: 0.8
+
+    chatOptions:
+      baseSystemMessage: |
+        Follow all workspace rules.
+
+        Inspect relevant source files, tests, documentation and Gradle
+        configuration before proposing changes.
+
+        Do not invent files, APIs, command output or test results.
+
+        Prefer minimal Kotlin changes that preserve the current architecture.
+
+      baseAgentSystemMessage: |
+        Work as a senior Kotlin backend engineer.
+
+        Research the project before editing.
+        Plan the smallest coherent change.
+        Implement it using existing project conventions.
+        Validate it using real commands.
+
+        Report only observed results.
+
+  - name: DeepSeek Coder V2 Lite
+    provider: ollama
+    model: ai-advent-deepseek-coder-v2
+    apiBase: http://localhost:11434
+    roles:
+      - chat
+      - edit
+      - apply
+
+    defaultCompletionOptions:
+      contextLength: 16384
+      maxTokens: 4096
+      temperature: 0.1
+      topP: 0.8
+
+    chatOptions:
+      baseSystemMessage: |
+        Follow all workspace rules.
+
+        Use Kotlin unless another language is explicitly requested.
+        Inspect existing code before editing.
+        Do not invent files, APIs, dependencies or command results.
+        Prefer small production-ready changes.

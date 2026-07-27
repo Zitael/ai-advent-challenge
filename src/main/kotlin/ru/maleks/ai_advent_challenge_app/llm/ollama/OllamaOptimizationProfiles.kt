@@ -25,4 +25,16 @@ object OllamaOptimizationProfiles {
         ),
         think = false
     )
+
+    val fastCode = OllamaGenerationConfig(
+        name = "fast-code",
+        options = OllamaOptions(
+            temperature = 0.1,
+            num_predict = 2200,
+            num_ctx = 16384,
+            top_p = 0.8,
+            repeat_penalty = 1.1
+        ),
+        think = false
+    )
 }
