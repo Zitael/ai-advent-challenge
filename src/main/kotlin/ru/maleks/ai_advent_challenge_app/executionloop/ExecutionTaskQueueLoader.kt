@@ -63,20 +63,26 @@ class ExecutionTaskQueueLoader {
         val description = fields["description"]?.takeIf { it.isNotBlank() }
             ?: error("Task $id is missing description")
 
+        val type = ExecutionTaskType.fromRaw(fields["type"])
+        val profile = ExecutionTaskProfile.fromRaw(fields["profile"] ?: fields["type"])
         val output = fields["output"]?.takeIf { it.isNotBlank() }?.let(Path::of)
         val validation = when (fields["validation"]?.lowercase()) {
             "file-exists", "file_exists" -> ExecutionValidationKind.FILE_EXISTS
             "file-contains", "file_contains" -> ExecutionValidationKind.FILE_CONTAINS
             "invariants" -> ExecutionValidationKind.INVARIANTS
-            else -> ExecutionValidationKind.FILE_EXISTS
+            "gradle-test", "gradle_test" -> ExecutionValidationKind.GRADLE_TEST
+            else -> ExecutionValidationKind.FILE_CONTAINS
         }
 
         return ExecutionTask(
             id = id,
             description = description,
+            type = type,
+            profile = profile,
             outputPath = output,
             validation = validation,
-            expectedContent = fields["expected"]?.takeIf { it.isNotBlank() }
+            expectedContent = fields["expected"]?.takeIf { it.isNotBlank() },
+            commitMessage = fields["commit"]?.takeIf { it.isNotBlank() }
         )
     }
 }

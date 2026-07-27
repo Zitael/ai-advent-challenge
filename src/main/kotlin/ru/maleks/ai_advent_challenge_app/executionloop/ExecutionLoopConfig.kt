@@ -6,14 +6,20 @@ data class ExecutionLoopConfig(
     val projectRoot: Path,
     val queueFile: Path,
     val logDirectory: Path,
+    val metricsDirectory: Path,
     val maxAttemptsPerTask: Int = 2,
     val ollamaBaseUrl: String,
     val ollamaModel: String,
-    val taskLimit: Int? = null
+    val runNumber: Int = 1,
+    val taskLimit: Int? = null,
+    val createCommits: Boolean = true
 ) {
     init {
         require(maxAttemptsPerTask >= 1) {
             "maxAttemptsPerTask must be at least 1"
+        }
+        require(runNumber >= 1) {
+            "runNumber must be at least 1"
         }
     }
 }

@@ -52,13 +52,23 @@ class ExecutionLogWriter(
         appendLine()
         appendLine("## Summary")
         appendLine()
+        appendLine("- Run number: ${summary.runNumber}")
+        appendLine("- Model: ${summary.model}")
         appendLine("- Started: ${formatInstant(summary.startedAt)}")
         appendLine("- Finished: ${formatInstant(summary.finishedAt)}")
         appendLine("- Duration: ${formatDuration(Duration.between(summary.startedAt, summary.finishedAt))}")
+        appendLine("- Uninterrupted duration: ${"%.2f".format(summary.uninterruptedDurationMinutes)} minutes")
         appendLine("- Total tasks: ${summary.totalTasks}")
         appendLine("- Completed tasks: ${summary.completedTasks}")
+        appendLine("- Consecutive tasks without intervention: ${summary.consecutiveTasksWithoutIntervention}")
         appendLine("- Failed tasks: ${summary.failedTasks}")
+        appendLine("- Average task duration: ${formatDuration(summary.averageTaskDuration)}")
+        appendLine("- First-pass success rate: ${"%.1f".format(summary.firstPassSuccessRate * 100)}%")
         appendLine("- Stopped early: ${summary.stoppedEarly}")
+        summary.breakTaskId?.let { appendLine("- Break task: $it") }
+        if (summary.breakFailureCategory != ExecutionFailureCategory.NONE) {
+            appendLine("- Break category: ${summary.breakFailureCategory}")
+        }
         summary.stopReason?.let { appendLine("- Stop reason: $it") }
         appendLine()
         appendLine("## Task Attempts")
@@ -76,10 +86,14 @@ class ExecutionLogWriter(
         appendLine("### Attempt $index — ${attempt.taskId}")
         appendLine()
         appendLine("- Task: ${attempt.taskDescription}")
+        appendLine("- Type: ${attempt.taskType}")
+        appendLine("- Profile: ${attempt.profile}")
         appendLine("- Started: ${formatInstant(attempt.startedAt)}")
         appendLine("- Attempt number: ${attempt.attemptNumber}")
         appendLine("- Status: ${attempt.status}")
+        appendLine("- Failure category: ${attempt.failureCategory}")
         appendLine("- Duration: ${formatDuration(attempt.duration)}")
+        attempt.commitResult?.let { appendLine("- Commit: $it") }
         appendLine()
         appendLine("#### Agent result")
         appendLine()

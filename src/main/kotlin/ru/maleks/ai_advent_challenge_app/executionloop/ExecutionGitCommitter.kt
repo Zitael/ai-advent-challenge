@@ -28,11 +28,18 @@ class ExecutionGitCommitter(
             )
         }
 
-        val status = runGit(listOf("status", "--short"))
-        if (status.output.isBlank()) {
+        val staged = runGit(listOf("diff", "--cached", "--name-only"))
+        val stagedPaths = staged.output
+            .lineSequence()
+            .map { it.trim().replace('\\', '/') }
+            .filter { it.isNotBlank() }
+            .toSet()
+
+        val stagedTaskFiles = relativePaths.filter { it in stagedPaths }
+        if (stagedTaskFiles.isEmpty()) {
             return GitCommitResult(
                 committed = false,
-                message = "Nothing to commit after git add."
+                message = "Commit skipped: artifact unchanged (${relativePaths.joinToString()})."
             )
         }
 
@@ -40,7 +47,7 @@ class ExecutionGitCommitter(
         return GitCommitResult(
             committed = commitResult.successful,
             message = if (commitResult.successful) {
-                "Committed ${relativePaths.size} file(s): ${relativePaths.joinToString()}"
+                "Committed ${stagedTaskFiles.size} file(s): ${stagedTaskFiles.joinToString()}"
             } else {
                 "git commit failed: ${commitResult.output}"
             }

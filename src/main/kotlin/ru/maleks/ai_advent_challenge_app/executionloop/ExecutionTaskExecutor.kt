@@ -44,7 +44,10 @@ class ExecutionTaskExecutor(
             config = EXECUTION_CONFIG
         ).answer
 
-        val applyResult = fileChangeApplier.apply(llmResponse)
+        val applyResult = fileChangeApplier.apply(
+            agentResponse = llmResponse,
+            task = task
+        )
 
         return ExecutionAgentResult(
             llmAnswer = llmResponse,

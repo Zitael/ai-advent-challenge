@@ -164,6 +164,24 @@ tasks.register<JavaExec>("prepareRelease") {
     }
 }
 
+tasks.register<JavaExec>("runExecutionLoop") {
+    group = "application"
+    description = "Run Day 5 autonomous execution loop over task-pool.md"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set(
+        "ru.maleks.ai_advent_challenge_app.executionloop.ExecutionLoopCliKt"
+    )
+    if (providers.gradleProperty("executionLoopLimit").isPresent) {
+        args("--limit=${providers.gradleProperty("executionLoopLimit").get()}")
+    }
+    if (providers.gradleProperty("executionLoopQueue").isPresent) {
+        args("--queue=${providers.gradleProperty("executionLoopQueue").get()}")
+    }
+    if (providers.gradleProperty("executionLoopRun").isPresent) {
+        args("--run=${providers.gradleProperty("executionLoopRun").get()}")
+    }
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }
