@@ -10,7 +10,7 @@
   ```
 - **Usage**:
   - Used by `LayeredMemoryAgent` for generating responses.
-  - Implemented by `OpenRouterClient`.
+  - Implemented by `OllamaClient`.
 
 ## Class OllamaClient
 - **File path**: `src/main/kotlin/ru/maleks/ai_advent_challenge_app/llm/ollama/OllamaClient.kt`
