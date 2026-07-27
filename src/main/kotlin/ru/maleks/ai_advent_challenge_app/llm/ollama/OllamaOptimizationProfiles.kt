@@ -6,7 +6,7 @@ object OllamaOptimizationProfiles {
         name = "baseline",
         options = OllamaOptions(
             temperature = 0.7,
-            num_predict = 700,
+            num_predict = 1500,
             num_ctx = 4096,
             top_p = 0.9,
             repeat_penalty = 1.1

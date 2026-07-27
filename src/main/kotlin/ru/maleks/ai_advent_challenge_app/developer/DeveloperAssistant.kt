@@ -4,6 +4,8 @@ import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaClient
 import ru.maleks.ai_advent_challenge_app.rag.answer.GroundedRagContextBuilder
 import ru.maleks.ai_advent_challenge_app.rag.model.DocumentIndex
 import ru.maleks.ai_advent_challenge_app.rag.search.ImprovedRagRetriever
+import ru.maleks.ai_advent_challenge_app.prompt.ProjectRulesLoader
+import ru.maleks.ai_advent_challenge_app.prompt.PromptContextAssembler
 
 class DeveloperAssistant(
     private val ollamaClient: OllamaClient,
@@ -16,7 +18,12 @@ class DeveloperAssistant(
         minBestScore = 0.08,
         minSources = 1
     ),
-    private val promptBuilder: DeveloperAssistantPromptBuilder = DeveloperAssistantPromptBuilder()
+    private val promptBuilder: DeveloperAssistantPromptBuilder =
+        DeveloperAssistantPromptBuilder(),
+    private val promptAssembler: PromptContextAssembler =
+        PromptContextAssembler(
+            ProjectRulesLoader()
+        )
 ) {
 
     suspend fun answerProjectQuestion(question: String): String {
@@ -43,10 +50,12 @@ class DeveloperAssistant(
         }
 
         val branch = gitProjectClient.currentBranch()
-        val prompt = promptBuilder.build(
-            question = question,
-            branch = branch,
-            groundedContext = groundedContext
+        val prompt = promptAssembler.assemble(
+            promptBuilder.build(
+                question = question,
+                branch = branch,
+                groundedContext = groundedContext
+            )
         )
 
         return ollamaClient.complete(prompt).answer
