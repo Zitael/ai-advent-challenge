@@ -45,6 +45,5 @@ Validates that all test tasks are properly configured and executed.
 - All test classes must have proper package structure
 - Test coverage must meet minimum thresholds
 
-## Summary:
-
+Summary:
 Validation rules ensure project integrity, correctness and alignment with best practices. These rules cover file existence, content validation, invariant checks and Gradle test configurations to maintain a robust and maintainable codebase.
