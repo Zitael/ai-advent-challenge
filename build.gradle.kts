@@ -163,3 +163,44 @@ tasks.register<JavaExec>("prepareRelease") {
         args("--skip-checks")
     }
 }
+
+dependencies {
+    testImplementation(kotlin("test"))
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+
+tasks.register<Exec>("runSmokeTests") {
+    group = "verification"
+    description = "Run Playwright smoke scenarios against Private AI UI"
+
+    val isWindows = System.getProperty("os.name")
+        .lowercase()
+        .contains("windows")
+
+    if (isWindows) {
+        commandLine(
+            "cmd",
+            "/c",
+            "npx",
+            "playwright",
+            "test",
+            "testing/smoke/private-ai.smoke.spec.js"
+        )
+    } else {
+        commandLine(
+            "npx",
+            "playwright",
+            "test",
+            "testing/smoke/private-ai.smoke.spec.js"
+        )
+    }
+}
+
+tasks.register("fullVerification") {
+    group = "verification"
+    description = "Run code tests and UI smoke tests, then collect a unified report"
+    dependsOn("test", "runSmokeTests")
+}
