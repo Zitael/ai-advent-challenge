@@ -220,6 +220,13 @@ tasks.register<JavaExec>("runConfidenceInference") {
     mainClass.set("ru.maleks.ai_advent_challenge_app.classification.ConfidenceInferenceCliKt")
 }
 
+tasks.register<JavaExec>("runModelRouting") {
+    group = "application"
+    description = "Run Day 8 cheap-to-strong model routing evaluation"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.routing.ModelRoutingCliKt")
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }

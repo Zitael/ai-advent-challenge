@@ -1,0 +1,429 @@
+{
+  "cheapModel" : "openai/gpt-4o-mini",
+  "strongModel" : "openai/gpt-4o",
+  "totalCases" : 10,
+  "cheapOnlyCount" : 4,
+  "escalatedCount" : 6,
+  "correctCount" : 4,
+  "measurableCases" : 5,
+  "cheapOnlyLatencyMs" : 5633,
+  "escalatedLatencyMs" : 11600,
+  "totalLatencyMs" : 17233,
+  "cheapOnlyTokens" : 568,
+  "escalatedTokens" : 1283,
+  "totalTokens" : 1851,
+  "cheapOnlyCost" : 1.14E-4,
+  "escalatedCost" : 0.0013113,
+  "totalCost" : 0.0014253,
+  "outcomes" : [ {
+    "testCaseId" : "simple-001",
+    "kind" : "SIMPLE",
+    "routedModel" : "CHEAP",
+    "escalated" : false,
+    "escalationReasons" : [ ],
+    "acceptedCategory" : "billing",
+    "expectedCategory" : "billing",
+    "correct" : true,
+    "cheapConfidence" : 0.9,
+    "cheapStatus" : "OK",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : true,
+      "details" : "Confidence 0.90 >= 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 7 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : true,
+      "details" : "Scoring status is OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "input_complexity",
+      "passed" : true,
+      "details" : "Input complexity is low"
+    } ],
+    "cheapLatencyMs" : 2364,
+    "strongLatencyMs" : 0,
+    "totalLatencyMs" : 2364,
+    "cheapTokens" : 144,
+    "strongTokens" : 0,
+    "totalTokens" : 144,
+    "cheapCost" : 2.88E-5,
+    "strongCost" : null,
+    "totalCost" : 2.88E-5
+  }, {
+    "testCaseId" : "simple-002",
+    "kind" : "SIMPLE",
+    "routedModel" : "CHEAP",
+    "escalated" : false,
+    "escalationReasons" : [ ],
+    "acceptedCategory" : "account",
+    "expectedCategory" : "account",
+    "correct" : true,
+    "cheapConfidence" : 0.9,
+    "cheapStatus" : "OK",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : true,
+      "details" : "Confidence 0.90 >= 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 7 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : true,
+      "details" : "Scoring status is OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: account"
+    }, {
+      "name" : "input_complexity",
+      "passed" : true,
+      "details" : "Input complexity is low"
+    } ],
+    "cheapLatencyMs" : 1248,
+    "strongLatencyMs" : 0,
+    "totalLatencyMs" : 1248,
+    "cheapTokens" : 142,
+    "strongTokens" : 0,
+    "totalTokens" : 142,
+    "cheapCost" : 2.85E-5,
+    "strongCost" : null,
+    "totalCost" : 2.85E-5
+  }, {
+    "testCaseId" : "simple-003",
+    "kind" : "SIMPLE",
+    "routedModel" : "CHEAP",
+    "escalated" : false,
+    "escalationReasons" : [ ],
+    "acceptedCategory" : "technical",
+    "expectedCategory" : "technical",
+    "correct" : true,
+    "cheapConfidence" : 0.9,
+    "cheapStatus" : "OK",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : true,
+      "details" : "Confidence 0.90 >= 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 9 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : true,
+      "details" : "Scoring status is OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: technical"
+    }, {
+      "name" : "input_complexity",
+      "passed" : true,
+      "details" : "Input complexity is low"
+    } ],
+    "cheapLatencyMs" : 991,
+    "strongLatencyMs" : 0,
+    "totalLatencyMs" : 991,
+    "cheapTokens" : 142,
+    "strongTokens" : 0,
+    "totalTokens" : 142,
+    "cheapCost" : 2.805E-5,
+    "strongCost" : null,
+    "totalCost" : 2.805E-5
+  }, {
+    "testCaseId" : "simple-004",
+    "kind" : "SIMPLE",
+    "routedModel" : "CHEAP",
+    "escalated" : false,
+    "escalationReasons" : [ ],
+    "acceptedCategory" : "feature_request",
+    "expectedCategory" : "feature_request",
+    "correct" : true,
+    "cheapConfidence" : 0.9,
+    "cheapStatus" : "OK",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : true,
+      "details" : "Confidence 0.90 >= 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 15 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : true,
+      "details" : "Scoring status is OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: feature_request"
+    }, {
+      "name" : "input_complexity",
+      "passed" : true,
+      "details" : "Input complexity is low"
+    } ],
+    "cheapLatencyMs" : 1030,
+    "strongLatencyMs" : 0,
+    "totalLatencyMs" : 1030,
+    "cheapTokens" : 140,
+    "strongTokens" : 0,
+    "totalTokens" : 140,
+    "cheapCost" : 2.865E-5,
+    "strongCost" : null,
+    "totalCost" : 2.865E-5
+  }, {
+    "testCaseId" : "edge-001",
+    "kind" : "EDGE",
+    "routedModel" : "STRONG",
+    "escalated" : true,
+    "escalationReasons" : [ "Multiple domains in ticket (2) — escalate" ],
+    "acceptedCategory" : "billing",
+    "expectedCategory" : null,
+    "correct" : null,
+    "cheapConfidence" : 0.9,
+    "cheapStatus" : "OK",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : true,
+      "details" : "Confidence 0.90 >= 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 7 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : true,
+      "details" : "Scoring status is OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "input_complexity",
+      "passed" : false,
+      "details" : "Multiple domains in ticket (2) — escalate"
+    } ],
+    "cheapLatencyMs" : 1428,
+    "strongLatencyMs" : 669,
+    "totalLatencyMs" : 2097,
+    "cheapTokens" : 144,
+    "strongTokens" : 74,
+    "totalTokens" : 218,
+    "cheapCost" : 2.88E-5,
+    "strongCost" : 1.925E-4,
+    "totalCost" : 2.2129999999999999E-4
+  }, {
+    "testCaseId" : "edge-002",
+    "kind" : "EDGE",
+    "routedModel" : "STRONG",
+    "escalated" : true,
+    "escalationReasons" : [ "Multiple domains in ticket (2) — escalate" ],
+    "acceptedCategory" : "technical",
+    "expectedCategory" : null,
+    "correct" : null,
+    "cheapConfidence" : 0.9,
+    "cheapStatus" : "OK",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : true,
+      "details" : "Confidence 0.90 >= 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 7 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : true,
+      "details" : "Scoring status is OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "input_complexity",
+      "passed" : false,
+      "details" : "Multiple domains in ticket (2) — escalate"
+    } ],
+    "cheapLatencyMs" : 953,
+    "strongLatencyMs" : 701,
+    "totalLatencyMs" : 1654,
+    "cheapTokens" : 139,
+    "strongTokens" : 70,
+    "totalTokens" : 209,
+    "cheapCost" : 2.76E-5,
+    "strongCost" : 1.825E-4,
+    "totalCost" : 2.1009999999999998E-4
+  }, {
+    "testCaseId" : "edge-003",
+    "kind" : "EDGE",
+    "routedModel" : "STRONG",
+    "escalated" : true,
+    "escalationReasons" : [ "Multiple domains in ticket (2) — escalate" ],
+    "acceptedCategory" : "account",
+    "expectedCategory" : null,
+    "correct" : null,
+    "cheapConfidence" : 0.9,
+    "cheapStatus" : "OK",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : true,
+      "details" : "Confidence 0.90 >= 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 7 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : true,
+      "details" : "Scoring status is OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "input_complexity",
+      "passed" : false,
+      "details" : "Multiple domains in ticket (2) — escalate"
+    } ],
+    "cheapLatencyMs" : 839,
+    "strongLatencyMs" : 636,
+    "totalLatencyMs" : 1475,
+    "cheapTokens" : 140,
+    "strongTokens" : 71,
+    "totalTokens" : 211,
+    "cheapCost" : 2.775E-5,
+    "strongCost" : 1.85E-4,
+    "totalCost" : 2.1275E-4
+  }, {
+    "testCaseId" : "noisy-001",
+    "kind" : "NOISY",
+    "routedModel" : "STRONG",
+    "escalated" : true,
+    "escalationReasons" : [ "Noisy input detected — escalate" ],
+    "acceptedCategory" : "technical",
+    "expectedCategory" : "account",
+    "correct" : false,
+    "cheapConfidence" : 0.9,
+    "cheapStatus" : "OK",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : true,
+      "details" : "Confidence 0.90 >= 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 9 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : true,
+      "details" : "Scoring status is OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: technical"
+    }, {
+      "name" : "input_complexity",
+      "passed" : false,
+      "details" : "Noisy input detected — escalate"
+    } ],
+    "cheapLatencyMs" : 1189,
+    "strongLatencyMs" : 1412,
+    "totalLatencyMs" : 2601,
+    "cheapTokens" : 142,
+    "strongTokens" : 73,
+    "totalTokens" : 215,
+    "cheapCost" : 2.85E-5,
+    "strongCost" : 1.975E-4,
+    "totalCost" : 2.2600000000000002E-4
+  }, {
+    "testCaseId" : "noisy-002",
+    "kind" : "NOISY",
+    "routedModel" : "STRONG",
+    "escalated" : true,
+    "escalationReasons" : [ "Confidence 0.70 < 0.8", "Scoring status is UNSURE — escalate", "Noisy input detected — escalate" ],
+    "acceptedCategory" : "billing",
+    "expectedCategory" : null,
+    "correct" : null,
+    "cheapConfidence" : 0.7,
+    "cheapStatus" : "UNSURE",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : false,
+      "details" : "Confidence 0.70 < 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 7 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : false,
+      "details" : "Scoring status is UNSURE — escalate"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "input_complexity",
+      "passed" : false,
+      "details" : "Noisy input detected — escalate"
+    } ],
+    "cheapLatencyMs" : 1496,
+    "strongLatencyMs" : 687,
+    "totalLatencyMs" : 2183,
+    "cheapTokens" : 141,
+    "strongTokens" : 70,
+    "totalTokens" : 211,
+    "cheapCost" : 2.925E-5,
+    "strongCost" : 1.9E-4,
+    "totalCost" : 2.1925000000000002E-4
+  }, {
+    "testCaseId" : "noisy-003",
+    "kind" : "NOISY",
+    "routedModel" : "STRONG",
+    "escalated" : true,
+    "escalationReasons" : [ "Confidence 0.70 < 0.8", "Scoring status is UNSURE — escalate", "Multiple domains in ticket (4) — escalate" ],
+    "acceptedCategory" : "technical",
+    "expectedCategory" : null,
+    "correct" : null,
+    "cheapConfidence" : 0.7,
+    "cheapStatus" : "UNSURE",
+    "heuristics" : [ {
+      "name" : "confidence_score",
+      "passed" : false,
+      "details" : "Confidence 0.70 < 0.8"
+    }, {
+      "name" : "answer_length",
+      "passed" : true,
+      "details" : "Category length 9 is within 4..20"
+    }, {
+      "name" : "unsure_rule",
+      "passed" : false,
+      "details" : "Scoring status is UNSURE — escalate"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: technical"
+    }, {
+      "name" : "input_complexity",
+      "passed" : false,
+      "details" : "Multiple domains in ticket (4) — escalate"
+    } ],
+    "cheapLatencyMs" : 868,
+    "strongLatencyMs" : 722,
+    "totalLatencyMs" : 1590,
+    "cheapTokens" : 145,
+    "strongTokens" : 74,
+    "totalTokens" : 219,
+    "cheapCost" : 2.94E-5,
+    "strongCost" : 1.925E-4,
+    "totalCost" : 2.219E-4
+  } ]
+}
