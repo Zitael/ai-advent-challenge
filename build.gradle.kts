@@ -234,6 +234,13 @@ tasks.register<JavaExec>("runDecompositionEvaluation") {
     mainClass.set("ru.maleks.ai_advent_challenge_app.decomposition.DecompositionCliKt")
 }
 
+tasks.register<JavaExec>("runMicroModelEvaluation") {
+    group = "application"
+    description = "Run Day 10 micro-model first pipeline evaluation"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.micromodel.MicromodelCliKt")
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }
