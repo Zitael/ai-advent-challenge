@@ -227,6 +227,13 @@ tasks.register<JavaExec>("runModelRouting") {
     mainClass.set("ru.maleks.ai_advent_challenge_app.routing.ModelRoutingCliKt")
 }
 
+tasks.register<JavaExec>("runDecompositionEvaluation") {
+    group = "application"
+    description = "Run Day 9 monolithic vs multi-stage inference comparison"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.decomposition.DecompositionCliKt")
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }

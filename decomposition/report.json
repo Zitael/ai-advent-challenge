@@ -1,0 +1,547 @@
+{
+  "monolithicModel" : "openai/gpt-4o-mini",
+  "analyzeModel" : "openai/gpt-4o-mini",
+  "decideModel" : "openai/gpt-4o",
+  "formatModel" : "openai/gpt-4o-mini",
+  "totalCases" : 8,
+  "monolithicValidCount" : 8,
+  "multiStageValidCount" : 8,
+  "monolithicMatchedFields" : 17,
+  "multiStageMatchedFields" : 13,
+  "expectedFieldChecks" : 24,
+  "monolithicLatencyMs" : 12327,
+  "multiStageLatencyMs" : 27676,
+  "monolithicTokens" : 1124,
+  "multiStageTokens" : 3055,
+  "monolithicCost" : 2.6940000000000004E-4,
+  "multiStageCost" : 0.00426615,
+  "outcomes" : [ {
+    "testCaseId" : "simple-001",
+    "variant" : "MONOLITHIC",
+    "result" : {
+      "category" : "billing",
+      "priority" : "HIGH",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Дважды списана сумма за PRO подписку."
+    },
+    "formatValid" : true,
+    "matchedFields" : 3,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "monolithic",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 3593,
+      "promptTokens" : 113,
+      "completionTokens" : 27,
+      "totalTokens" : 140,
+      "cost" : 3.315E-5
+    } ],
+    "totalLatencyMs" : 3593,
+    "totalTokens" : 140,
+    "totalCost" : 3.315E-5,
+    "rawStages" : [ "category=billing|priority=high|action=human_review|summary=Дважды списана сумма за PRO подписку." ]
+  }, {
+    "testCaseId" : "simple-001",
+    "variant" : "MULTI_STAGE",
+    "result" : {
+      "category" : "billing",
+      "priority" : "MEDIUM",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Дважды списали за PRO подписку, требуется возврат."
+    },
+    "formatValid" : true,
+    "matchedFields" : 2,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "analyze",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1254,
+      "promptTokens" : 81,
+      "completionTokens" : 31,
+      "totalTokens" : 112,
+      "cost" : 3.075E-5
+    }, {
+      "stageName" : "decide",
+      "model" : "openai/gpt-4o",
+      "latencyMs" : 1768,
+      "promptTokens" : 133,
+      "completionTokens" : 13,
+      "totalTokens" : 146,
+      "cost" : 4.625E-4
+    }, {
+      "stageName" : "format",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1116,
+      "promptTokens" : 84,
+      "completionTokens" : 29,
+      "totalTokens" : 113,
+      "cost" : 3.0E-5
+    } ],
+    "totalLatencyMs" : 4138,
+    "totalTokens" : 371,
+    "totalCost" : 5.2325E-4,
+    "rawStages" : [ "intent=billing|signals=PRO подписка, вернуть деньги|clean=Списали дважды за PRO подписку, прошу вернуть деньги.", "category=billing|priority=medium|action=human_review", "category=billing|priority=medium|action=human_review|summary=Дважды списали за PRO подписку, требуется возврат." ]
+  }, {
+    "testCaseId" : "simple-002",
+    "variant" : "MONOLITHIC",
+    "result" : {
+      "category" : "account",
+      "priority" : "MEDIUM",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Кнопка Save неактивна при смене email."
+    },
+    "formatValid" : true,
+    "matchedFields" : 2,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "monolithic",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1280,
+      "promptTokens" : 111,
+      "completionTokens" : 29,
+      "totalTokens" : 140,
+      "cost" : 3.405E-5
+    } ],
+    "totalLatencyMs" : 1280,
+    "totalTokens" : 140,
+    "totalCost" : 3.405E-5,
+    "rawStages" : [ "category=account|priority=medium|action=human_review|summary=Кнопка Save неактивна при смене email." ]
+  }, {
+    "testCaseId" : "simple-002",
+    "variant" : "MULTI_STAGE",
+    "result" : {
+      "category" : "account",
+      "priority" : "MEDIUM",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Email change button inactive, needs review."
+    },
+    "formatValid" : true,
+    "matchedFields" : 2,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "analyze",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1807,
+      "promptTokens" : 79,
+      "completionTokens" : 30,
+      "totalTokens" : 109,
+      "cost" : 2.985E-5
+    }, {
+      "stageName" : "decide",
+      "model" : "openai/gpt-4o",
+      "latencyMs" : 670,
+      "promptTokens" : 132,
+      "completionTokens" : 12,
+      "totalTokens" : 144,
+      "cost" : 4.5E-4
+    }, {
+      "stageName" : "format",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 831,
+      "promptTokens" : 86,
+      "completionTokens" : 23,
+      "totalTokens" : 109,
+      "cost" : 2.67E-5
+    } ],
+    "totalLatencyMs" : 3308,
+    "totalTokens" : 362,
+    "totalCost" : 5.065499999999999E-4,
+    "rawStages" : [ "intent=account|signals=email,profile,button|clean=Не могу сменить email в профиле, кнопка Save неактивна.", "category=account|priority=medium|action=human_review", "category=account|priority=medium|action=human_review|summary=Email change button inactive, needs review." ]
+  }, {
+    "testCaseId" : "complex-001",
+    "variant" : "MONOLITHIC",
+    "result" : {
+      "category" : "billing",
+      "priority" : "HIGH",
+      "action" : "ESCALATE",
+      "summary" : "Проблемы с оплатой и доступом к аккаунту."
+    },
+    "formatValid" : true,
+    "matchedFields" : 2,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "monolithic",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1392,
+      "promptTokens" : 113,
+      "completionTokens" : 31,
+      "totalTokens" : 144,
+      "cost" : 3.555E-5
+    } ],
+    "totalLatencyMs" : 1392,
+    "totalTokens" : 144,
+    "totalCost" : 3.555E-5,
+    "rawStages" : [ "category=billing|priority=high|action=escalate|summary=Проблемы с оплатой и доступом к аккаунту." ]
+  }, {
+    "testCaseId" : "complex-001",
+    "variant" : "MULTI_STAGE",
+    "result" : {
+      "category" : "account",
+      "priority" : "HIGH",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Оплатил тариф, доступ не появился, не могу войти."
+    },
+    "formatValid" : true,
+    "matchedFields" : 2,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "analyze",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1344,
+      "promptTokens" : 81,
+      "completionTokens" : 37,
+      "totalTokens" : 118,
+      "cost" : 3.435E-5
+    }, {
+      "stageName" : "decide",
+      "model" : "openai/gpt-4o",
+      "latencyMs" : 661,
+      "promptTokens" : 138,
+      "completionTokens" : 12,
+      "totalTokens" : 150,
+      "cost" : 4.65E-4
+    }, {
+      "stageName" : "format",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 862,
+      "promptTokens" : 87,
+      "completionTokens" : 29,
+      "totalTokens" : 116,
+      "cost" : 3.045E-5
+    } ],
+    "totalLatencyMs" : 2867,
+    "totalTokens" : 384,
+    "totalCost" : 5.298000000000001E-4,
+    "rawStages" : [ "intent=mixed|signals=оплата,доступ,аккаунт|clean=Оплатил тариф, но доступ не появился и не могу войти в аккаунт.", "category=account|priority=high|action=human_review", "category=account|priority=high|action=human_review|summary=Оплатил тариф, доступ не появился, не могу войти." ]
+  }, {
+    "testCaseId" : "complex-002",
+    "variant" : "MONOLITHIC",
+    "result" : {
+      "category" : "technical",
+      "priority" : "URGENT",
+      "action" : "ESCALATE",
+      "summary" : "API 502 error post-deployment, SSO login issue."
+    },
+    "formatValid" : true,
+    "matchedFields" : 3,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "monolithic",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1273,
+      "promptTokens" : 113,
+      "completionTokens" : 30,
+      "totalTokens" : 143,
+      "cost" : 3.495E-5
+    } ],
+    "totalLatencyMs" : 1273,
+    "totalTokens" : 143,
+    "totalCost" : 3.495E-5,
+    "rawStages" : [ "category=technical|priority=urgent|action=escalate|summary=API 502 error post-deployment, SSO login issue." ]
+  }, {
+    "testCaseId" : "complex-002",
+    "variant" : "MULTI_STAGE",
+    "result" : {
+      "category" : "technical",
+      "priority" : "URGENT",
+      "action" : "ESCALATE",
+      "summary" : "API 502 error post-deploy, SSO login failure for clients."
+    },
+    "formatValid" : true,
+    "matchedFields" : 3,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "analyze",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 878,
+      "promptTokens" : 81,
+      "completionTokens" : 37,
+      "totalTokens" : 118,
+      "cost" : 3.435E-5
+    }, {
+      "stageName" : "decide",
+      "model" : "openai/gpt-4o",
+      "latencyMs" : 721,
+      "promptTokens" : 139,
+      "completionTokens" : 13,
+      "totalTokens" : 152,
+      "cost" : 4.775E-4
+    }, {
+      "stageName" : "format",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1370,
+      "promptTokens" : 92,
+      "completionTokens" : 32,
+      "totalTokens" : 124,
+      "cost" : 3.3E-5
+    } ],
+    "totalLatencyMs" : 2969,
+    "totalTokens" : 394,
+    "totalCost" : 5.4485E-4,
+    "rawStages" : [ "intent=technical|signals=API,502,SSO|clean=После деплоя API возвращает ошибку 502, клиенты не могут войти через SSO.", "category=technical|priority=urgent|action=escalate", "category=technical|priority=urgent|action=escalate|summary=API 502 error post-deploy, SSO login failure for clients." ]
+  }, {
+    "testCaseId" : "complex-003",
+    "variant" : "MONOLITHIC",
+    "result" : {
+      "category" : "feature_request",
+      "priority" : "MEDIUM",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Webhook for ticket status change and CSV export needed."
+    },
+    "formatValid" : true,
+    "matchedFields" : 1,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "monolithic",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1129,
+      "promptTokens" : 112,
+      "completionTokens" : 27,
+      "totalTokens" : 139,
+      "cost" : 3.3E-5
+    } ],
+    "totalLatencyMs" : 1129,
+    "totalTokens" : 139,
+    "totalCost" : 3.3E-5,
+    "rawStages" : [ "category=feature_request|priority=medium|action=human_review|summary=Webhook for ticket status change and CSV export needed." ]
+  }, {
+    "testCaseId" : "complex-003",
+    "variant" : "MULTI_STAGE",
+    "result" : {
+      "category" : "feature_request",
+      "priority" : "MEDIUM",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Webhook creation request for ticket status change and CSV export."
+    },
+    "formatValid" : true,
+    "matchedFields" : 1,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "analyze",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 990,
+      "promptTokens" : 80,
+      "completionTokens" : 47,
+      "totalTokens" : 127,
+      "cost" : 4.02E-5
+    }, {
+      "stageName" : "decide",
+      "model" : "openai/gpt-4o",
+      "latencyMs" : 1008,
+      "promptTokens" : 149,
+      "completionTokens" : 14,
+      "totalTokens" : 163,
+      "cost" : 5.125E-4
+    }, {
+      "stageName" : "format",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1312,
+      "promptTokens" : 95,
+      "completionTokens" : 28,
+      "totalTokens" : 123,
+      "cost" : 3.105E-5
+    } ],
+    "totalLatencyMs" : 3310,
+    "totalTokens" : 413,
+    "totalCost" : 5.837500000000001E-4,
+    "rawStages" : [ "intent=feature|signals=webhook,статус,экспорт,CSV,dashboard|clean=Запрос на создание вебхука при изменении статуса тикета и экспорт данных в CSV из дашборда.", "category=feature_request|priority=medium|action=human_review", "category=feature_request|priority=medium|action=human_review|summary=Webhook creation request for ticket status change and CSV export." ]
+  }, {
+    "testCaseId" : "noisy-001",
+    "variant" : "MONOLITHIC",
+    "result" : {
+      "category" : "billing",
+      "priority" : "URGENT",
+      "action" : "ESCALATE",
+      "summary" : "Payment declined and login issues reported."
+    },
+    "formatValid" : true,
+    "matchedFields" : 1,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "monolithic",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1352,
+      "promptTokens" : 109,
+      "completionTokens" : 24,
+      "totalTokens" : 133,
+      "cost" : 3.075E-5
+    } ],
+    "totalLatencyMs" : 1352,
+    "totalTokens" : 133,
+    "totalCost" : 3.075E-5,
+    "rawStages" : [ "category=billing|priority=urgent|action=escalate|summary=Payment declined and login issues reported." ]
+  }, {
+    "testCaseId" : "noisy-001",
+    "variant" : "MULTI_STAGE",
+    "result" : {
+      "category" : "billing",
+      "priority" : "MEDIUM",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Payment declined, login issue, possible refund request."
+    },
+    "formatValid" : true,
+    "matchedFields" : 2,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "analyze",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 976,
+      "promptTokens" : 77,
+      "completionTokens" : 27,
+      "totalTokens" : 104,
+      "cost" : 2.775E-5
+    }, {
+      "stageName" : "decide",
+      "model" : "openai/gpt-4o",
+      "latencyMs" : 1416,
+      "promptTokens" : 128,
+      "completionTokens" : 12,
+      "totalTokens" : 140,
+      "cost" : 4.4E-4
+    }, {
+      "stageName" : "format",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1409,
+      "promptTokens" : 79,
+      "completionTokens" : 26,
+      "totalTokens" : 105,
+      "cost" : 2.745E-5
+    } ],
+    "totalLatencyMs" : 3801,
+    "totalTokens" : 349,
+    "totalCost" : 4.952E-4,
+    "rawStages" : [ "intent=mixed|signals=payment declined,login broken,refund|clean=Payment declined, login issue, possible refund request.", "category=billing|priority=medium|action=human_review", "category=billing|priority=medium|action=human_review|summary=Payment declined, login issue, possible refund request." ]
+  }, {
+    "testCaseId" : "noisy-002",
+    "variant" : "MONOLITHIC",
+    "result" : {
+      "category" : "technical",
+      "priority" : "HIGH",
+      "action" : "ESCALATE",
+      "summary" : "Gradle timeout 502 issue needs urgent attention."
+    },
+    "formatValid" : true,
+    "matchedFields" : 2,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "monolithic",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1360,
+      "promptTokens" : 112,
+      "completionTokens" : 27,
+      "totalTokens" : 139,
+      "cost" : 3.3E-5
+    } ],
+    "totalLatencyMs" : 1360,
+    "totalTokens" : 139,
+    "totalCost" : 3.3E-5,
+    "rawStages" : [ "category=technical|priority=high|action=escalate|summary=Gradle timeout 502 issue needs urgent attention." ]
+  }, {
+    "testCaseId" : "noisy-002",
+    "variant" : "MULTI_STAGE",
+    "result" : {
+      "category" : "account",
+      "priority" : "MEDIUM",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Review issues with billing, SSO, and dark mode feature."
+    },
+    "formatValid" : true,
+    "matchedFields" : 0,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "analyze",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1576,
+      "promptTokens" : 80,
+      "completionTokens" : 38,
+      "totalTokens" : 118,
+      "cost" : 3.48E-5
+    }, {
+      "stageName" : "decide",
+      "model" : "openai/gpt-4o",
+      "latencyMs" : 936,
+      "promptTokens" : 139,
+      "completionTokens" : 13,
+      "totalTokens" : 152,
+      "cost" : 4.775E-4
+    }, {
+      "stageName" : "format",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1142,
+      "promptTokens" : 91,
+      "completionTokens" : 28,
+      "totalTokens" : 119,
+      "cost" : 3.045E-5
+    } ],
+    "totalLatencyMs" : 3654,
+    "totalTokens" : 389,
+    "totalCost" : 5.4275E-4,
+    "rawStages" : [ "intent=mixed|signals=billing,account,technical,feature|clean=RAG MCP Ollama Gradle timeout 502, billing invoice, account SSO, feature dark mode", "category=account|priority=medium|action=human_review", "category=account|priority=medium|action=human_review|summary=Review issues with billing, SSO, and dark mode feature." ]
+  }, {
+    "testCaseId" : "policy-001",
+    "variant" : "MONOLITHIC",
+    "result" : {
+      "category" : "billing",
+      "priority" : "LOW",
+      "action" : "AUTO_REPLY",
+      "summary" : "Промокод не сработал, но работа продолжается."
+    },
+    "formatValid" : true,
+    "matchedFields" : 3,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "monolithic",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 948,
+      "promptTokens" : 117,
+      "completionTokens" : 29,
+      "totalTokens" : 146,
+      "cost" : 3.495E-5
+    } ],
+    "totalLatencyMs" : 948,
+    "totalTokens" : 146,
+    "totalCost" : 3.495E-5,
+    "rawStages" : [ "category=billing|priority=low|action=auto_reply|summary=Промокод не сработал, но работа продолжается." ]
+  }, {
+    "testCaseId" : "policy-001",
+    "variant" : "MULTI_STAGE",
+    "result" : {
+      "category" : "billing",
+      "priority" : "MEDIUM",
+      "action" : "HUMAN_REVIEW",
+      "summary" : "Промокод не сработал, но не блокирует работу."
+    },
+    "formatValid" : true,
+    "matchedFields" : 1,
+    "expectedFields" : 3,
+    "stageMetrics" : [ {
+      "stageName" : "analyze",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1278,
+      "promptTokens" : 85,
+      "completionTokens" : 39,
+      "totalTokens" : 124,
+      "cost" : 3.615E-5
+    }, {
+      "stageName" : "decide",
+      "model" : "openai/gpt-4o",
+      "latencyMs" : 805,
+      "promptTokens" : 141,
+      "completionTokens" : 12,
+      "totalTokens" : 153,
+      "cost" : 4.725E-4
+    }, {
+      "stageName" : "format",
+      "model" : "openai/gpt-4o-mini",
+      "latencyMs" : 1546,
+      "promptTokens" : 85,
+      "completionTokens" : 31,
+      "totalTokens" : 116,
+      "cost" : 3.135E-5
+    } ],
+    "totalLatencyMs" : 3629,
+    "totalTokens" : 393,
+    "totalCost" : 5.4E-4,
+    "rawStages" : [ "intent=mixed|signals=промокод,не сработал,шаблоном|clean=Промокод не сработал, но это не блокирует работу.", "category=billing|priority=medium|action=human_review", "category=billing|priority=medium|action=human_review|summary=Промокод не сработал, но не блокирует работу." ]
+  } ]
+}

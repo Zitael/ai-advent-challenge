@@ -1,0 +1,58 @@
+[
+  {
+    "id": "simple-001",
+    "ticketText": "Списали дважды за PRO подписку в этом месяце, прошу вернуть деньги.",
+    "expectedCategory": "billing",
+    "expectedPriority": "high",
+    "expectedAction": "human_review"
+  },
+  {
+    "id": "simple-002",
+    "ticketText": "Не могу сменить email в профиле, кнопка Save неактивна.",
+    "expectedCategory": "account",
+    "expectedPriority": "medium",
+    "expectedAction": "escalate"
+  },
+  {
+    "id": "complex-001",
+    "ticketText": "Оплатил тариф, но доступ не появился и войти в аккаунт тоже не могу.",
+    "expectedCategory": "billing",
+    "expectedPriority": "high",
+    "expectedAction": "human_review"
+  },
+  {
+    "id": "complex-002",
+    "ticketText": "После деплоя API отвечает 502, клиенты не могут войти через SSO.",
+    "expectedCategory": "technical",
+    "expectedPriority": "urgent",
+    "expectedAction": "escalate"
+  },
+  {
+    "id": "complex-003",
+    "ticketText": "Нужен webhook при изменении статуса тикета и экспорт в CSV из dashboard.",
+    "expectedCategory": "feature_request",
+    "expectedPriority": "low",
+    "expectedAction": "auto_reply"
+  },
+  {
+    "id": "noisy-001",
+    "ticketText": "asdf qwe123 !!! payment declined !!! login broken !!! refund maybe ???",
+    "expectedCategory": "billing",
+    "expectedPriority": "high",
+    "expectedAction": "human_review"
+  },
+  {
+    "id": "noisy-002",
+    "ticketText": "RAG MCP Ollama Gradle timeout 502 billing invoice account SSO feature dark mode",
+    "expectedCategory": "technical",
+    "expectedPriority": "urgent",
+    "expectedAction": "escalate"
+  },
+  {
+    "id": "policy-001",
+    "ticketText": "Промокод не сработал, но это не блокирует работу. Можно ответить шаблоном?",
+    "expectedCategory": "billing",
+    "expectedPriority": "low",
+    "expectedAction": "auto_reply"
+  }
+]
