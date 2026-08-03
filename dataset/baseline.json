@@ -1,0 +1,77 @@
+{
+  "model" : "openai/gpt-4o-mini",
+  "sampleCount" : 10,
+  "exactMatches" : 10,
+  "formatValidCount" : 10,
+  "samples" : [ {
+    "index" : 1,
+    "userMessage" : "Ticket: Batch job зависает на шаге embedding generation.",
+    "expectedCategory" : "technical",
+    "modelAnswer" : "technical",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 2,
+    "userMessage" : "Ticket: Gradle task runSupportAssistant падает с timeout на MCP.",
+    "expectedCategory" : "technical",
+    "modelAnswer" : "technical",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 3,
+    "userMessage" : "Ticket: После merge аккаунтов пропали права администратора.",
+    "expectedCategory" : "account",
+    "modelAnswer" : "account",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 4,
+    "userMessage" : "Ticket: API возвращает 500 при вызове /v1/reports/export после обновления.",
+    "expectedCategory" : "technical",
+    "modelAnswer" : "technical",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 5,
+    "userMessage" : "Ticket: Экспорт PDF зависает на 90 процентах.",
+    "expectedCategory" : "technical",
+    "modelAnswer" : "technical",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 6,
+    "userMessage" : "Ticket: Как изменить реквизиты для корпоративного счёта?",
+    "expectedCategory" : "billing",
+    "modelAnswer" : "billing",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 7,
+    "userMessage" : "Ticket: GraphQL endpoint отдаёт partial response без ошибок.",
+    "expectedCategory" : "technical",
+    "modelAnswer" : "technical",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 8,
+    "userMessage" : "Ticket: Почему списали 990 рублей после отмены trial?",
+    "expectedCategory" : "billing",
+    "modelAnswer" : "billing",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 9,
+    "userMessage" : "Ticket: Хотим экспорт тикетов в CSV из support dashboard.",
+    "expectedCategory" : "feature_request",
+    "modelAnswer" : "feature_request",
+    "exactMatch" : true,
+    "formatValid" : true
+  }, {
+    "index" : 10,
+    "userMessage" : "Ticket: Как отключить двухфакторную аутентификацию?",
+    "expectedCategory" : "account",
+    "modelAnswer" : "account",
+    "exactMatch" : true,
+    "formatValid" : true
+  } ]
+}

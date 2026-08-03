@@ -182,6 +182,37 @@ tasks.register<JavaExec>("runExecutionLoop") {
     }
 }
 
+tasks.register<JavaExec>("buildDataset") {
+    group = "application"
+    description = "Build Day 6 fine-tuning dataset (train.jsonl + eval.jsonl)"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.dataset.DatasetBuildCliKt")
+}
+
+tasks.register<JavaExec>("validateDataset") {
+    group = "verification"
+    description = "Validate Day 6 JSONL dataset format"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.dataset.DatasetValidateCliKt")
+}
+
+tasks.register<JavaExec>("runDatasetBaseline") {
+    group = "application"
+    description = "Run gpt-4o-mini baseline on 10 eval examples"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.dataset.DatasetBaselineCliKt")
+}
+
+tasks.register<JavaExec>("prepareFineTuning") {
+    group = "application"
+    description = "Prepare OpenAI fine-tuning workflow (dry-run by default)"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.dataset.OpenAiFineTuningCliKt")
+    if (project.hasProperty("executeFineTuning")) {
+        args("--execute")
+    }
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }

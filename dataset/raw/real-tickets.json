@@ -1,0 +1,86 @@
+[
+  {
+    "id": "real-crm-1001",
+    "source": "support-data/crm.json",
+    "userMessage": "После смены телефона не могу войти. Код подтверждения не приходит.",
+    "category": "account"
+  },
+  {
+    "id": "real-crm-1002",
+    "source": "support-data/crm.json",
+    "userMessage": "Экспорт PDF зависает на 90 процентах.",
+    "category": "technical"
+  },
+  {
+    "id": "real-manual-001",
+    "source": "manual",
+    "userMessage": "Списали дважды за PRO подписку в этом месяце, прошу вернуть деньги.",
+    "category": "billing"
+  },
+  {
+    "id": "real-manual-002",
+    "source": "manual",
+    "userMessage": "Не могу сменить email в профиле, кнопка Save неактивна.",
+    "category": "account"
+  },
+  {
+    "id": "real-manual-003",
+    "source": "manual",
+    "userMessage": "API возвращает 500 при вызове /v1/reports/export после обновления.",
+    "category": "technical"
+  },
+  {
+    "id": "real-manual-004",
+    "source": "manual",
+    "userMessage": "Нужен webhook при изменении статуса тикета в CRM.",
+    "category": "feature_request"
+  },
+  {
+    "id": "real-manual-005",
+    "source": "manual",
+    "userMessage": "Инвойс за июль не пришёл на почту бухгалтерии.",
+    "category": "billing"
+  },
+  {
+    "id": "real-manual-006",
+    "source": "manual",
+    "userMessage": "Заблокировали аккаунт после пяти неудачных попыток входа.",
+    "category": "account"
+  },
+  {
+    "id": "real-manual-007",
+    "source": "manual",
+    "userMessage": "RAG-поиск по документации перестал находить README после reindex.",
+    "category": "technical"
+  },
+  {
+    "id": "real-manual-008",
+    "source": "manual",
+    "userMessage": "Хотим экспорт тикетов в CSV из support dashboard.",
+    "category": "feature_request"
+  },
+  {
+    "id": "real-manual-009",
+    "source": "manual",
+    "userMessage": "Карта отклонена при оплате годового тарифа, ошибка payment_declined.",
+    "category": "billing"
+  },
+  {
+    "id": "real-manual-010",
+    "source": "manual",
+    "userMessage": "Не приходит письмо для сброса пароля уже второй день.",
+    "category": "account"
+  },
+  {
+    "id": "real-manual-011",
+    "source": "manual",
+    "userMessage": "Gradle task runSupportAssistant падает с timeout на MCP.",
+    "category": "technical"
+  },
+  {
+    "id": "real-manual-012",
+    "source": "manual",
+    "userMessage": "Добавьте роль read-only для операторов поддержки в CRM.",
+    "category": "feature_request"
+  }
+]
