@@ -11,7 +11,10 @@ class OpenRouterClient(
     private val model: String
 ) : LlmClient {
 
-    override suspend fun complete(messages: List<OpenRouterMessage>): LlmResult {
+    override suspend fun complete(
+        messages: List<OpenRouterMessage>,
+        temperature: Double?
+    ): LlmResult {
         val response: OpenRouterResponse =
             httpClient.post("https://openrouter.ai/api/v1/chat/completions") {
                 header(HttpHeaders.Authorization, "Bearer $apiKey")
@@ -21,7 +24,7 @@ class OpenRouterClient(
                         model = model,
                         messages = messages,
                         maxTokens = 700,
-                        temperature = 0.7
+                        temperature = temperature ?: 0.7
                     )
                 )
             }.body()

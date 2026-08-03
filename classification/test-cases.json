@@ -1,0 +1,62 @@
+[
+  {
+    "id": "correct-001",
+    "kind": "CORRECT",
+    "ticketText": "Списали дважды за PRO подписку в этом месяце, прошу вернуть деньги.",
+    "expectedCategory": "billing"
+  },
+  {
+    "id": "correct-002",
+    "kind": "CORRECT",
+    "ticketText": "Не могу сменить email в профиле, кнопка Save неактивна.",
+    "expectedCategory": "account"
+  },
+  {
+    "id": "correct-003",
+    "kind": "CORRECT",
+    "ticketText": "API возвращает 500 при вызове /v1/reports/export после обновления.",
+    "expectedCategory": "technical"
+  },
+  {
+    "id": "correct-004",
+    "kind": "CORRECT",
+    "ticketText": "Нужен webhook при изменении статуса тикета в CRM.",
+    "expectedCategory": "feature_request"
+  },
+  {
+    "id": "edge-001",
+    "kind": "EDGE",
+    "ticketText": "Оплатил тариф, но доступ не появился и войти в аккаунт тоже не могу.",
+    "expectedCategory": null
+  },
+  {
+    "id": "edge-002",
+    "kind": "EDGE",
+    "ticketText": "После обновления интеграции перестали приходить billing alerts в Slack.",
+    "expectedCategory": null
+  },
+  {
+    "id": "edge-003",
+    "kind": "EDGE",
+    "ticketText": "Хочу удалить аккаунт и получить финальный счёт за текущий период.",
+    "expectedCategory": null
+  },
+  {
+    "id": "noisy-001",
+    "kind": "NOISY",
+    "ticketText": "asdf qwe123 !!! не рабоатет логин pls help asap !!!",
+    "expectedCategory": "account"
+  },
+  {
+    "id": "noisy-002",
+    "kind": "NOISY",
+    "ticketText": "Ticket: ??? payment declined ??? also UI broken ??? need refund maybe ???",
+    "expectedCategory": null
+  },
+  {
+    "id": "noisy-003",
+    "kind": "NOISY",
+    "ticketText": "RAG MCP Ollama Gradle timeout error 502 feature dark mode billing invoice account SSO",
+    "expectedCategory": null
+  }
+]

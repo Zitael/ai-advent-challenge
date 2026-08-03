@@ -213,6 +213,13 @@ tasks.register<JavaExec>("prepareFineTuning") {
     }
 }
 
+tasks.register<JavaExec>("runConfidenceInference") {
+    group = "application"
+    description = "Run Day 7 confidence-controlled ticket classification evaluation"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.classification.ConfidenceInferenceCliKt")
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }

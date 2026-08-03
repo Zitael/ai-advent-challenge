@@ -1,0 +1,328 @@
+{
+  "model" : "openai/gpt-4o-mini",
+  "totalCases" : 10,
+  "acceptedCount" : 9,
+  "rejectedCount" : 1,
+  "unsureCount" : 1,
+  "failCount" : 0,
+  "retryCount" : 1,
+  "correctAcceptedCount" : 4,
+  "measurableCases" : 5,
+  "baselineLatencyMs" : 8359,
+  "confidenceLatencyMs" : 50989,
+  "baselineTokens" : 722,
+  "confidenceTokens" : 4801,
+  "baselineCost" : 1.146E-4,
+  "confidenceCost" : 8.3085E-4,
+  "outcomes" : [ {
+    "testCaseId" : "correct-001",
+    "kind" : "CORRECT",
+    "acceptedCategory" : "billing",
+    "finalStatus" : "OK",
+    "expectedCategory" : "billing",
+    "correct" : true,
+    "candidateCategory" : "billing",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=billing, confidence=0.9, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[billing, billing, billing], consensus=billing, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed billing"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 5303,
+    "totalTokens" : 448,
+    "totalCost" : 7.71E-5
+  }, {
+    "testCaseId" : "correct-002",
+    "kind" : "CORRECT",
+    "acceptedCategory" : "account",
+    "finalStatus" : "OK",
+    "expectedCategory" : "account",
+    "correct" : true,
+    "candidateCategory" : "account",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=account, confidence=0.9, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: account"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[account, account, account], consensus=account, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed account"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 5733,
+    "totalTokens" : 438,
+    "totalCost" : 7.560000000000001E-5
+  }, {
+    "testCaseId" : "correct-003",
+    "kind" : "CORRECT",
+    "acceptedCategory" : "technical",
+    "finalStatus" : "OK",
+    "expectedCategory" : "technical",
+    "correct" : true,
+    "candidateCategory" : "technical",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=technical, confidence=0.9, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: technical"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[technical, technical, technical], consensus=technical, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed technical"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 4250,
+    "totalTokens" : 443,
+    "totalCost" : 7.635E-5
+  }, {
+    "testCaseId" : "correct-004",
+    "kind" : "CORRECT",
+    "acceptedCategory" : "feature_request",
+    "finalStatus" : "OK",
+    "expectedCategory" : "feature_request",
+    "correct" : true,
+    "candidateCategory" : "feature_request",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=feature_request, confidence=0.9, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: feature_request"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[feature_request, feature_request, feature_request], consensus=feature_request, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed feature_request"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 4270,
+    "totalTokens" : 428,
+    "totalCost" : 7.59E-5
+  }, {
+    "testCaseId" : "edge-001",
+    "kind" : "EDGE",
+    "acceptedCategory" : "billing",
+    "finalStatus" : "OK",
+    "expectedCategory" : null,
+    "correct" : null,
+    "candidateCategory" : "billing",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=billing, confidence=0.9, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[billing, billing, billing], consensus=billing, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed billing"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 4467,
+    "totalTokens" : 447,
+    "totalCost" : 7.65E-5
+  }, {
+    "testCaseId" : "edge-002",
+    "kind" : "EDGE",
+    "acceptedCategory" : "billing",
+    "finalStatus" : "OK",
+    "expectedCategory" : null,
+    "correct" : null,
+    "candidateCategory" : "billing",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=billing, confidence=0.9, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[billing, billing, billing], consensus=billing, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed billing"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 4546,
+    "totalTokens" : 427,
+    "totalCost" : 7.350000000000001E-5
+  }, {
+    "testCaseId" : "edge-003",
+    "kind" : "EDGE",
+    "acceptedCategory" : "billing",
+    "finalStatus" : "OK",
+    "expectedCategory" : null,
+    "correct" : null,
+    "candidateCategory" : "billing",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=billing, confidence=0.9, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[billing, billing, billing], consensus=billing, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed billing"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 4472,
+    "totalTokens" : 432,
+    "totalCost" : 7.424999999999999E-5
+  }, {
+    "testCaseId" : "noisy-001",
+    "kind" : "NOISY",
+    "acceptedCategory" : "technical",
+    "finalStatus" : "OK",
+    "expectedCategory" : "account",
+    "correct" : false,
+    "candidateCategory" : "technical",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=technical, confidence=0.9, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: technical"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[account, technical, technical], consensus=technical, agreement=67%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed technical"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 4152,
+    "totalTokens" : 437,
+    "totalCost" : 7.5E-5
+  }, {
+    "testCaseId" : "noisy-002",
+    "kind" : "NOISY",
+    "acceptedCategory" : null,
+    "finalStatus" : "UNSURE",
+    "expectedCategory" : null,
+    "correct" : null,
+    "candidateCategory" : "billing",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=billing, confidence=0.7, status=UNSURE"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: billing"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[billing, billing, billing], consensus=billing, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : false,
+      "details" : "Self-check corrected to technical (was billing)"
+    } ],
+    "inferenceCalls" : 10,
+    "rejected" : true,
+    "retried" : true,
+    "totalLatencyMs" : 9435,
+    "totalTokens" : 853,
+    "totalCost" : 1.5000000000000001E-4
+  }, {
+    "testCaseId" : "noisy-003",
+    "kind" : "NOISY",
+    "acceptedCategory" : "technical",
+    "finalStatus" : "OK",
+    "expectedCategory" : null,
+    "correct" : null,
+    "candidateCategory" : "technical",
+    "approaches" : [ {
+      "name" : "scoring",
+      "passed" : true,
+      "details" : "Scoring category=technical, confidence=0.85, status=OK"
+    }, {
+      "name" : "constraint",
+      "passed" : true,
+      "details" : "Valid category token: technical"
+    }, {
+      "name" : "redundancy",
+      "passed" : true,
+      "details" : "Votes=[technical, technical, technical], consensus=technical, agreement=100%"
+    }, {
+      "name" : "self_check",
+      "passed" : true,
+      "details" : "Self-check confirmed technical"
+    } ],
+    "inferenceCalls" : 5,
+    "rejected" : false,
+    "retried" : false,
+    "totalLatencyMs" : 4361,
+    "totalTokens" : 448,
+    "totalCost" : 7.664999999999999E-5
+  } ]
+}
