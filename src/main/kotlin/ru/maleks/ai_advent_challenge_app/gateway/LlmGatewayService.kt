@@ -101,14 +101,18 @@ class LlmGatewayService(
         request: GatewayChatRequest,
         processedUserPrompt: String
     ): List<GatewayMessage> {
-        if (request.messages.isEmpty()) {
-            return emptyList()
+        val lastUserIndex = request.messages.indexOfLast { it.role == "user" }
+        if (lastUserIndex < 0) {
+            return request.messages
         }
 
-        return request.messages.dropLast(1) + GatewayMessage(
-            role = "user",
-            content = processedUserPrompt
-        )
+        return request.messages.mapIndexed { index, message ->
+            if (index == lastUserIndex) {
+                message.copy(content = processedUserPrompt)
+            } else {
+                message
+            }
+        }
     }
 }
 
