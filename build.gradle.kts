@@ -241,6 +241,13 @@ tasks.register<JavaExec>("runMicroModelEvaluation") {
     mainClass.set("ru.maleks.ai_advent_challenge_app.micromodel.MicromodelCliKt")
 }
 
+tasks.register<JavaExec>("runPromptInjectionAudit") {
+    group = "application"
+    description = "Run Day 11 prompt injection audit on SupportAssistant"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.promptinjection.PromptInjectionCliKt")
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }
