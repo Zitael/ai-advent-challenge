@@ -1,5 +1,7 @@
 package ru.maleks.ai_advent_challenge_app.support
 
+import ru.maleks.ai_advent_challenge_app.indirectinjection.IndirectContentBoundary
+import ru.maleks.ai_advent_challenge_app.indirectinjection.IndirectContentSanitizer
 import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaClient
 import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaOptimizationProfiles
 import ru.maleks.ai_advent_challenge_app.promptinjection.InputGuardResult
@@ -14,7 +16,8 @@ class SupportAssistant(
     private val retriever: ImprovedRagRetriever,
     private val crmClient: SupportCrmClient,
     private val promptBuilder: SupportAssistantPromptBuilder = SupportAssistantPromptBuilder(),
-    private val injectionGuard: PromptInjectionGuard = PromptInjectionGuard()
+    private val injectionGuard: PromptInjectionGuard = PromptInjectionGuard(),
+    private val indirectSanitizer: IndirectContentSanitizer = IndirectContentSanitizer()
 ) {
     suspend fun answer(ticketId: String, question: String): String {
         val inputGuard = injectionGuard.inspectInput(question)
@@ -41,10 +44,13 @@ class SupportAssistant(
         ).rerankedResults.joinToString("\n\n") { it.asPromptContext() }
             .ifBlank { "No relevant documentation found." }
 
+        val safeTicketContext = sanitizeUntrusted(ticketContext, "crm")
+        val safeDocumentationContext = sanitizeUntrusted(documentationContext, "documentation")
+
         val messages = promptBuilder.buildMessages(
             question = question,
-            ticketContext = ticketContext,
-            documentationContext = documentationContext,
+            ticketContext = safeTicketContext,
+            documentationContext = safeDocumentationContext,
             mode = PromptSecurityMode.HARDENED
         )
 
@@ -62,6 +68,11 @@ class SupportAssistant(
     }
 
     suspend fun listTickets(): String = crmClient.listTickets()
+
+    private fun sanitizeUntrusted(content: String, label: String): String {
+        val sanitized = indirectSanitizer.sanitize(content)
+        return IndirectContentBoundary.wrap(label, sanitized.sanitizedText)
+    }
 
     private fun RerankedSearchResult.asPromptContext(): String = buildString {
         appendLine("Source: ${chunk.source}")

@@ -248,6 +248,13 @@ tasks.register<JavaExec>("runPromptInjectionAudit") {
     mainClass.set("ru.maleks.ai_advent_challenge_app.promptinjection.PromptInjectionCliKt")
 }
 
+tasks.register<JavaExec>("runIndirectInjectionAudit") {
+    group = "application"
+    description = "Run Day 12 indirect prompt injection audit"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.indirectinjection.IndirectInjectionCliKt")
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }
