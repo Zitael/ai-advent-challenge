@@ -1,0 +1,149 @@
+{
+  "totalCases" : 11,
+  "passedCases" : 11,
+  "failedCases" : 0,
+  "results" : [ {
+    "testCase" : {
+      "id" : "tc-001",
+      "description" : "Clean prompt without secrets",
+      "prompt" : "Explain Kotlin coroutines in two sentences.",
+      "mode" : "BLOCK",
+      "expectedAction" : "ALLOW",
+      "expectedFindingTypes" : [ ]
+    },
+    "actualAction" : "ALLOW",
+    "actualFindingTypes" : [ ],
+    "passed" : true,
+    "processedPreview" : "Explain Kotlin coroutines in two sentences."
+  }, {
+    "testCase" : {
+      "id" : "tc-002",
+      "description" : "OpenAI API key in prompt",
+      "prompt" : "My key is sk-proj-abc123XYZ789012345678",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "API_KEY_OPENAI" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "API_KEY_OPENAI" ],
+    "passed" : true,
+    "processedPreview" : "My key is sk-proj-abc123XYZ789012345678"
+  }, {
+    "testCase" : {
+      "id" : "tc-003",
+      "description" : "GitHub PAT",
+      "prompt" : "Use token ghp_1234567890abcdefghijklmnopqrstuv",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "API_KEY_GITHUB" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "API_KEY_GITHUB" ],
+    "passed" : true,
+    "processedPreview" : "Use token ghp_1234567890abcdefghijklmnopqrstuv"
+  }, {
+    "testCase" : {
+      "id" : "tc-004",
+      "description" : "AWS access key",
+      "prompt" : "Deploy with AKIAIOSFODNN7EXAMPLE credentials",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "API_KEY_AWS" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "API_KEY_AWS" ],
+    "passed" : true,
+    "processedPreview" : "Deploy with AKIAIOSFODNN7EXAMPLE credentials"
+  }, {
+    "testCase" : {
+      "id" : "tc-005",
+      "description" : "Credit card number",
+      "prompt" : "Charge card 4111 1111 1111 1111 for invoice",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "CREDIT_CARD" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "CREDIT_CARD", "PHONE" ],
+    "passed" : true,
+    "processedPreview" : "Charge card 4111 1111 1111 1111 for invoice"
+  }, {
+    "testCase" : {
+      "id" : "tc-006",
+      "description" : "Email address",
+      "prompt" : "Contact me at user.secret@example.com about billing",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "EMAIL" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "EMAIL" ],
+    "passed" : true,
+    "processedPreview" : "Contact me at user.secret@example.com about billing"
+  }, {
+    "testCase" : {
+      "id" : "tc-007",
+      "description" : "Phone number",
+      "prompt" : "Call me at +7 916 123-45-67 after deploy",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "PHONE" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "PHONE" ],
+    "passed" : true,
+    "processedPreview" : "Call me at +7 916 123-45-67 after deploy"
+  }, {
+    "testCase" : {
+      "id" : "tc-008",
+      "description" : "Base64-encoded OpenAI key",
+      "prompt" : "Config blob c2stcHJvai1hYmMxMjM=",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "BASE64_SECRET" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "BASE64_SECRET" ],
+    "passed" : true,
+    "processedPreview" : "Config blob c2stcHJvai1hYmMxMjM="
+  }, {
+    "testCase" : {
+      "id" : "tc-009",
+      "description" : "Split secret across parts",
+      "prompt" : "мой ключ: sk- proj-abc123XYZ789012345678",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "API_KEY_OPENAI" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "API_KEY_OPENAI" ],
+    "passed" : true,
+    "processedPreview" : "мой ключ: sk- proj-abc123XYZ789012345678"
+  }, {
+    "testCase" : {
+      "id" : "tc-010",
+      "description" : "Mask mode instead of block",
+      "prompt" : "Send request with sk-proj-maskmode1234567890 key",
+      "mode" : "MASK",
+      "expectedAction" : "MASK",
+      "expectedFindingTypes" : [ "API_KEY_OPENAI" ]
+    },
+    "actualAction" : "MASK",
+    "actualFindingTypes" : [ "API_KEY_OPENAI" ],
+    "passed" : true,
+    "processedPreview" : "Send request with [REDACTED_API_KEY] key"
+  }, {
+    "testCase" : {
+      "id" : "tc-011",
+      "description" : "Multiple secrets in one prompt",
+      "prompt" : "Keys: sk-proj-abc123XYZ789012345678 and ghp_1234567890abcdefghijklmnopqrstuv",
+      "mode" : "BLOCK",
+      "expectedAction" : "BLOCK",
+      "expectedFindingTypes" : [ "API_KEY_OPENAI", "API_KEY_GITHUB" ]
+    },
+    "actualAction" : "BLOCK",
+    "actualFindingTypes" : [ "API_KEY_GITHUB", "API_KEY_OPENAI" ],
+    "passed" : true,
+    "processedPreview" : "Keys: sk-proj-abc123XYZ789012345678 and ghp_1234567890abcdefghijklmnopqrstuv"
+  } ]
+}
