@@ -26,7 +26,8 @@ class LlmGatewayService(
             return GatewayServiceResult.RateLimited(rateLimit.retryAfterSeconds)
         }
 
-        val userPrompt = request.messages.lastOrNull { it.role == "user" }?.content.orEmpty()
+        val userPrompt = request.inputGuardText
+            ?: request.messages.lastOrNull { it.role == "user" }?.content.orEmpty()
         val guardMode = request.inputGuardMode
         val inputResult = inputGuard.inspect(userPrompt, guardMode)
 
@@ -48,7 +49,11 @@ class LlmGatewayService(
             return GatewayServiceResult.InputBlocked(inputResult)
         }
 
-        val upstreamMessages = buildUpstreamMessages(request, inputResult.processedPrompt)
+        val upstreamMessages = if (request.inputGuardText != null) {
+            request.messages
+        } else {
+            buildUpstreamMessages(request, inputResult.processedPrompt)
+        }
         val model = request.model ?: config.defaultModel
 
         val proxyResult = proxyClient.chat(

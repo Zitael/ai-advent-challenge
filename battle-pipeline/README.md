@@ -106,14 +106,28 @@ Token/cost counters.
 ### `DELETE /api/sessions/{sessionId}`
 Очистить историю чата.
 
+### Workspace files
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/files` | список файлов |
+| GET | `/api/files/{name}` | содержимое |
+| PUT | `/api/files/{name}` | сохранить `{"content":"..."}` |
+| DELETE | `/api/files/{name}` | удалить (seed защищён) |
+
+Seed: `internal-secrets.env` — demo-секреты. Агент видит файл, но не должен выдавать значения (`BattleSecretLeakGuard`).
+
+Env: `BATTLE_WORKSPACE_DIR` → `battle-pipeline/workspace`
+
 ## Слои защиты
 
 1. **PromptInjectionGuard** — jailbreak, forget instructions, security bypass
 2. **IndirectContentSanitizer** — HTML comments, zero-width, hidden links
 3. **Gateway InputGuard** — secrets (sk-, ghp_, AKIA), base64, split keys, comments scan
 4. **Gateway OutputGuard** — leaked secrets, system prompt, suspicious URLs
-5. **Hardened system prompt** — untrusted boundary `<untrusted_user_input>`
-6. **Execution loop security step** — heuristic + LLM review before commit
+5. **Hardened system prompt** — workspace + user boundaries
+6. **BattleSecretLeakGuard** — blocks quoted secrets from workspace files
+7. **Execution loop security step** — heuristic + LLM review before commit
 
 ## Red team baseline
 
@@ -140,6 +154,7 @@ Token/cost counters.
 | `GATEWAY_DEFAULT_MODEL` | no | `openai/gpt-4o-mini` |
 | `GATEWAY_RATE_LIMIT_PER_MINUTE` | no | `30` |
 | `GATEWAY_AUDIT_LOG` | no | `llm-gateway/logs/audit.jsonl` |
+| `BATTLE_WORKSPACE_DIR` | no | `battle-pipeline/workspace` |
 
 ## Red team report template
 

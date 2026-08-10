@@ -21,6 +21,7 @@ import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.delete
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import io.ktor.server.routing.put
 import io.ktor.server.routing.routing
 import ru.maleks.ai_advent_challenge_app.gateway.GatewayAuditLogger
 import ru.maleks.ai_advent_challenge_app.gateway.GatewayChatRequest
@@ -62,17 +63,21 @@ fun main() {
         auditLogger = auditLogger
     )
 
+    val workspaceService = BattleWorkspaceService(Path.of(config.workspaceDirectory))
+
     val chatService = BattleChatService(
         config = config,
         gatewayService = gatewayService,
         pipelineGuard = BattlePipelineGuard(),
-        sessionStore = ChatSessionStore(maxHistoryMessages = config.maxHistoryMessages)
+        sessionStore = ChatSessionStore(maxHistoryMessages = config.maxHistoryMessages),
+        workspaceService = workspaceService,
+        secretLeakGuard = BattleSecretLeakGuard(workspaceService)
     )
 
     val apiKeyValidator = ApiKeyValidator(config.apiKey)
 
     embeddedServer(ServerCIO, host = config.host, port = config.port) {
-        battleModule(config, gatewayService, chatService, apiKeyValidator)
+        battleModule(config, gatewayService, chatService, workspaceService, apiKeyValidator)
     }.start(wait = true)
 }
 
@@ -80,6 +85,7 @@ fun Application.battleModule(
     config: BattlePipelineConfig,
     gatewayService: LlmGatewayService,
     chatService: BattleChatService,
+    workspaceService: BattleWorkspaceService,
     apiKeyValidator: ApiKeyValidator
 ) {
     install(ServerContentNegotiation) { jackson() }
@@ -117,6 +123,7 @@ fun Application.battleModule(
                         "gateway-input-guard",
                         "gateway-output-guard",
                         "hardened-system-prompt",
+                        "workspace-secret-leak-guard",
                         "security-review-execution-loop"
                     )
                 )
@@ -133,6 +140,58 @@ fun Application.battleModule(
                     "totalCostUsd" to snapshot.totalCostUsd
                 )
             )
+        }
+
+        get("/api/files") {
+            if (!apiKeyValidator.isValid(call.request.headers[HttpHeaders.Authorization])) {
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    ErrorResponse(status = 401, error = "unauthorized", message = "unauthorized")
+                )
+                return@get
+            }
+            call.respond(workspaceService.listFiles())
+        }
+
+        get("/api/files/{fileName}") {
+            if (!apiKeyValidator.isValid(call.request.headers[HttpHeaders.Authorization])) {
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    ErrorResponse(status = 401, error = "unauthorized", message = "unauthorized")
+                )
+                return@get
+            }
+
+            val fileName = call.parameters["fileName"].orEmpty()
+            call.respond(workspaceService.readFile(fileName))
+        }
+
+        put("/api/files/{fileName}") {
+            if (!apiKeyValidator.isValid(call.request.headers[HttpHeaders.Authorization])) {
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    ErrorResponse(status = 401, error = "unauthorized", message = "unauthorized")
+                )
+                return@put
+            }
+
+            val fileName = call.parameters["fileName"].orEmpty()
+            val request = call.receive<BattleFileUploadRequest>()
+            call.respond(workspaceService.saveFile(fileName, request.content))
+        }
+
+        delete("/api/files/{fileName}") {
+            if (!apiKeyValidator.isValid(call.request.headers[HttpHeaders.Authorization])) {
+                call.respond(
+                    HttpStatusCode.Unauthorized,
+                    ErrorResponse(status = 401, error = "unauthorized", message = "unauthorized")
+                )
+                return@delete
+            }
+
+            val fileName = call.parameters["fileName"].orEmpty()
+            val deleted = workspaceService.deleteFile(fileName)
+            call.respond(mapOf("deleted" to deleted, "fileName" to fileName))
         }
 
         post("/api/chat") {

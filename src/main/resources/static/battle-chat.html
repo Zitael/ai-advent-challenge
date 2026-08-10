@@ -8,7 +8,7 @@
         :root { font-family: Inter, Arial, sans-serif; color-scheme: dark; }
         * { box-sizing: border-box; }
         body { margin: 0; min-height: 100vh; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; }
-        .app { width: min(920px, 100%); min-height: 100vh; display: flex; flex-direction: column; background: #1e293b; }
+        .app { width: min(980px, 100%); min-height: 100vh; display: flex; flex-direction: column; background: #1e293b; }
         .header { padding: 18px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; gap: 12px; }
         .header h1 { margin: 0; font-size: 20px; }
         .subtitle { margin-top: 4px; font-size: 13px; color: #94a3b8; }
@@ -16,11 +16,18 @@
         .status.online { background: #065f46; color: #d1fae5; }
         .status.error { background: #7f1d1d; color: #fee2e2; }
         .settings { padding: 12px 20px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; border-bottom: 1px solid #334155; }
+        .files-panel { padding: 12px 20px; border-bottom: 1px solid #334155; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .files-panel h2 { margin: 0 0 8px; font-size: 14px; }
+        .file-list { list-style: none; margin: 0; padding: 0; max-height: 140px; overflow-y: auto; }
+        .file-list li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid #334155; font-size: 13px; }
+        .badge { font-size: 11px; padding: 2px 6px; border-radius: 999px; background: #7f1d1d; color: #fee2e2; }
+        .badge.safe { background: #334155; color: #cbd5e1; }
         input, textarea, button { font: inherit; }
         input, textarea { width: 100%; border: 1px solid #475569; border-radius: 8px; background: #0f172a; color: #e2e8f0; padding: 10px 12px; }
-        button { border: none; border-radius: 8px; padding: 10px 16px; cursor: pointer; background: #2563eb; color: white; }
+        button { border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; background: #2563eb; color: white; }
         button.secondary { background: #475569; }
         button.danger { background: #991b1b; }
+        button.small { font-size: 12px; padding: 4px 8px; }
         button:disabled { opacity: 0.55; cursor: default; }
         .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
         .message { max-width: 82%; border-radius: 12px; padding: 12px 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -31,9 +38,9 @@
         .composer { border-top: 1px solid #334155; padding: 14px 20px; }
         .composer-row { display: flex; gap: 10px; align-items: flex-end; }
         textarea { min-height: 48px; max-height: 180px; resize: vertical; }
-        .composer-actions { display: flex; gap: 8px; margin-top: 10px; justify-content: space-between; }
+        .composer-actions, .file-actions { display: flex; gap: 8px; margin-top: 10px; justify-content: space-between; flex-wrap: wrap; }
         .hint { color: #94a3b8; font-size: 12px; }
-        @media (max-width: 700px) { .settings { grid-template-columns: 1fr; } .composer-row { flex-direction: column; } }
+        @media (max-width: 700px) { .settings, .files-panel { grid-template-columns: 1fr; } .composer-row { flex-direction: column; } }
     </style>
 </head>
 <body>
@@ -41,7 +48,7 @@
     <header class="header">
         <div>
             <h1>Battle Pipeline</h1>
-            <div class="subtitle">Gateway + injection guards + OpenRouter</div>
+            <div class="subtitle">Gateway + workspace files + secret leak guard</div>
         </div>
         <div id="status" class="status">Проверка...</div>
     </header>
@@ -52,8 +59,27 @@
         <button id="saveSettingsButton" class="secondary" type="button">Сохранить</button>
     </section>
 
+    <section class="files-panel">
+        <div>
+            <h2>Workspace files</h2>
+            <ul id="fileList" class="file-list"></ul>
+            <div class="file-actions">
+                <button id="refreshFilesButton" class="secondary small" type="button">Обновить</button>
+            </div>
+        </div>
+        <div>
+            <h2>Upload / edit</h2>
+            <input id="fileNameInput" type="text" placeholder="file-name.txt" maxlength="120">
+            <textarea id="fileContentInput" rows="5" placeholder="Содержимое файла..." style="margin-top:8px;"></textarea>
+            <div class="file-actions">
+                <button id="saveFileButton" class="secondary small" type="button">Сохранить файл</button>
+                <button id="downloadFileButton" class="secondary small" type="button">Скачать выбранный</button>
+            </div>
+        </div>
+    </section>
+
     <main id="messages" class="messages">
-        <div class="message system">Укажи API key партнёра и начни red-team тест. Все запросы проходят через guards.</div>
+        <div class="message system">API key → чат. Агент видит workspace, но не должен выдавать секреты из internal-secrets.env.</div>
     </main>
 
     <footer class="composer">
@@ -77,6 +103,14 @@
     const clearButton = document.getElementById("clearButton");
     const saveSettingsButton = document.getElementById("saveSettingsButton");
     const statusElement = document.getElementById("status");
+    const fileList = document.getElementById("fileList");
+    const fileNameInput = document.getElementById("fileNameInput");
+    const fileContentInput = document.getElementById("fileContentInput");
+    const refreshFilesButton = document.getElementById("refreshFilesButton");
+    const saveFileButton = document.getElementById("saveFileButton");
+    const downloadFileButton = document.getElementById("downloadFileButton");
+
+    let selectedFileName = null;
 
     initialize();
 
@@ -85,6 +119,7 @@
         sessionIdInput.value = localStorage.getItem("battleSessionId") || createSessionId();
         saveSettings();
         await checkHealth();
+        await refreshFiles();
         messageInput.focus();
     }
 
@@ -100,6 +135,10 @@
         if (sessionId) localStorage.setItem("battleSessionId", sessionId);
     }
 
+    function authHeaders() {
+        return { "Authorization": `Bearer ${apiKeyInput.value.trim()}` };
+    }
+
     async function checkHealth() {
         try {
             const response = await fetch("/health");
@@ -110,6 +149,89 @@
             statusElement.textContent = "Недоступен";
             statusElement.className = "status error";
         }
+    }
+
+    async function refreshFiles() {
+        const apiKey = apiKeyInput.value.trim();
+        if (!apiKey) {
+            fileList.innerHTML = "<li>Укажи API key</li>";
+            return;
+        }
+
+        try {
+            const response = await fetch("/api/files", { headers: authHeaders() });
+            const files = await readJsonSafely(response);
+            if (!response.ok) throw new Error(files.message || `HTTP ${response.status}`);
+
+            fileList.innerHTML = "";
+            files.forEach(file => {
+                const li = document.createElement("li");
+                const badge = document.createElement("span");
+                badge.className = file.confidential ? "badge" : "badge safe";
+                badge.textContent = file.confidential ? "secret" : "public";
+
+                const nameBtn = document.createElement("button");
+                nameBtn.className = "secondary small";
+                nameBtn.textContent = file.name;
+                nameBtn.addEventListener("click", () => selectFile(file.name));
+
+                li.appendChild(nameBtn);
+                li.appendChild(badge);
+                fileList.appendChild(li);
+            });
+
+            if (!selectedFileName && files.length > 0) {
+                selectFile(files[0].name);
+            }
+        } catch (error) {
+            fileList.innerHTML = `<li>Ошибка: ${error.message}</li>`;
+        }
+    }
+
+    async function selectFile(name) {
+        selectedFileName = name;
+        fileNameInput.value = name;
+        try {
+            const response = await fetch(`/api/files/${encodeURIComponent(name)}`, { headers: authHeaders() });
+            const body = await readJsonSafely(response);
+            if (!response.ok) throw new Error(body.message || `HTTP ${response.status}`);
+            fileContentInput.value = body.content || "";
+        } catch (error) {
+            addMessage("system", `Не удалось загрузить ${name}: ${error.message}`);
+        }
+    }
+
+    async function saveFile() {
+        const apiKey = apiKeyInput.value.trim();
+        const name = fileNameInput.value.trim();
+        if (!apiKey || !name) return;
+
+        try {
+            const response = await fetch(`/api/files/${encodeURIComponent(name)}`, {
+                method: "PUT",
+                headers: { ...authHeaders(), "Content-Type": "application/json" },
+                body: JSON.stringify({ content: fileContentInput.value })
+            });
+            const body = await readJsonSafely(response);
+            if (!response.ok) throw new Error(body.message || `HTTP ${response.status}`);
+            selectedFileName = name;
+            await refreshFiles();
+            addMessage("system", `Файл сохранён: ${name}`);
+        } catch (error) {
+            addMessage("system", `Ошибка сохранения: ${error.message}`);
+        }
+    }
+
+    function downloadFile() {
+        const name = fileNameInput.value.trim() || selectedFileName;
+        if (!name) return;
+        const blob = new Blob([fileContentInput.value], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        link.click();
+        URL.revokeObjectURL(url);
     }
 
     async function sendMessage() {
@@ -129,10 +251,7 @@
         try {
             const response = await fetch("/api/chat", {
                 method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json"
-                },
+                headers: { ...authHeaders(), "Content-Type": "application/json" },
                 body: JSON.stringify({ sessionId, message })
             });
 
@@ -143,7 +262,7 @@
             const meta = document.createElement("span");
             meta.className = "meta";
             const guards = body.guards || {};
-            meta.textContent = `${body.model} · ${body.durationMillis}ms · guards: injection=${guards.injectionBlocked}, gateway=${(guards.gatewayInputFindings||[]).join(",")||"clean"}`;
+            meta.textContent = `${body.model} · ${body.durationMillis}ms · secretLeak=${guards.secretLeakBlocked}`;
             pending.appendChild(meta);
         } catch (error) {
             pending.textContent = `Ошибка: ${error.message}`;
@@ -162,7 +281,7 @@
         try {
             const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}`, {
                 method: "DELETE",
-                headers: { "Authorization": `Bearer ${apiKey}` }
+                headers: authHeaders()
             });
             const body = await readJsonSafely(response);
             if (!response.ok) throw new Error(body.message || `HTTP ${response.status}`);
@@ -196,7 +315,10 @@
         try { return JSON.parse(text); } catch { return { message: text }; }
     }
 
-    saveSettingsButton.addEventListener("click", () => { saveSettings(); addMessage("system", "Настройки сохранены."); });
+    saveSettingsButton.addEventListener("click", () => { saveSettings(); addMessage("system", "Настройки сохранены."); refreshFiles(); });
+    refreshFilesButton.addEventListener("click", refreshFiles);
+    saveFileButton.addEventListener("click", saveFile);
+    downloadFileButton.addEventListener("click", downloadFile);
     sendButton.addEventListener("click", sendMessage);
     clearButton.addEventListener("click", clearSession);
     messageInput.addEventListener("keydown", e => {

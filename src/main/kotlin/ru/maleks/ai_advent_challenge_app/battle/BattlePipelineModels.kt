@@ -20,7 +20,9 @@ data class BattleGuardSummary(
     val indirectArtifactsRemoved: List<String>,
     val gatewayInputFindings: List<String>,
     val gatewayOutputViolations: List<String>,
-    val outputBlocked: Boolean
+    val outputBlocked: Boolean,
+    val secretLeakBlocked: Boolean = false,
+    val leakedSecretHints: List<String> = emptyList()
 )
 
 data class BattleHealthResponse(

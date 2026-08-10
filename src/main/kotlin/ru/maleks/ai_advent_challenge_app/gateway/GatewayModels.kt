@@ -46,6 +46,7 @@ data class GatewayChatRequest(
     val model: String? = null,
     val messages: List<GatewayMessage>,
     val inputGuardMode: InputGuardMode = InputGuardMode.BLOCK,
+    val inputGuardText: String? = null,
     val temperature: Double? = null
 )
 

@@ -12,7 +12,8 @@ data class BattlePipelineConfig(
     val auditLogPath: String,
     val maxMessageChars: Int,
     val maxHistoryMessages: Int,
-    val maxConcurrentGenerations: Int
+    val maxConcurrentGenerations: Int,
+    val workspaceDirectory: String
 ) {
     companion object {
         fun from(dotenv: Dotenv): BattlePipelineConfig {
@@ -50,7 +51,10 @@ data class BattlePipelineConfig(
                     ?: "20").toInt(),
                 maxConcurrentGenerations = (dotenv["BATTLE_MAX_CONCURRENT"]
                     ?: System.getenv("BATTLE_MAX_CONCURRENT")
-                    ?: "4").toInt()
+                    ?: "4").toInt(),
+                workspaceDirectory = dotenv["BATTLE_WORKSPACE_DIR"]
+                    ?: System.getenv("BATTLE_WORKSPACE_DIR")
+                    ?: "battle-pipeline/workspace"
             )
         }
     }
