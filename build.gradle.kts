@@ -276,6 +276,20 @@ tasks.register<JavaExec>("runSecurityProbe") {
     mainClass.set("ru.maleks.ai_advent_challenge_app.executionloop.ExecutionSecurityProbeCliKt")
 }
 
+tasks.register<JavaExec>("runBattlePipeline") {
+    group = "application"
+    description = "Run battle pipeline server with web chat UI and gateway guards"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.battle.BattlePipelineServerKt")
+}
+
+tasks.register<JavaExec>("runBattleRedTeam") {
+    group = "verification"
+    description = "Run battle pipeline red team baseline attacks"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.battle.BattleRedTeamCliKt")
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }
