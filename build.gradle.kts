@@ -255,6 +255,20 @@ tasks.register<JavaExec>("runIndirectInjectionAudit") {
     mainClass.set("ru.maleks.ai_advent_challenge_app.indirectinjection.IndirectInjectionCliKt")
 }
 
+tasks.register<JavaExec>("runLlmGateway") {
+    group = "application"
+    description = "Run Day 13 LLM gateway proxy server"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.gateway.LlmGatewayServerKt")
+}
+
+tasks.register<JavaExec>("runGatewayGuardTests") {
+    group = "verification"
+    description = "Run Day 13 gateway input guard test catalog"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.gateway.GatewayGuardTestCliKt")
+}
+
 dependencies {
     testImplementation(kotlin("test"))
 }
