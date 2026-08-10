@@ -1,13 +1,10 @@
 package ru.maleks.ai_advent_challenge_app.executionloop
 
-import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaClient
-import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaGenerationConfig
-import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaOptions
 import ru.maleks.ai_advent_challenge_app.projectfiles.ProjectFileTools
 import java.nio.file.Path
 
 class ExecutionTaskExecutor(
-    private val ollamaClient: OllamaClient,
+    private val gatewayClient: ExecutionGatewayClient,
     private val fileTools: ProjectFileTools,
     private val fileChangeApplier: ExecutionFileChangeApplier,
     private val promptBuilder: ExecutionPromptBuilder = ExecutionPromptBuilder()
@@ -39,21 +36,44 @@ class ExecutionTaskExecutor(
             previousFailure = previousFailure
         )
 
-        val llmResponse = ollamaClient.complete(
+        val gatewayResult = gatewayClient.complete(
             prompt = prompt,
-            config = EXECUTION_CONFIG
-        ).answer
+            purpose = ExecutionLlmPurpose.CODE_GENERATION,
+            temperature = 0.1
+        )
+
+        if (gatewayResult.blocked) {
+            return ExecutionAgentResult(
+                llmAnswer = gatewayResult.answer,
+                applyResult = FileApplyResult(
+                    appliedFiles = emptyList(),
+                    message = buildGatewayBlockedMessage(gatewayResult)
+                ),
+                gatewayResult = gatewayResult
+            )
+        }
 
         val applyResult = fileChangeApplier.apply(
-            agentResponse = llmResponse,
+            agentResponse = gatewayResult.answer,
             task = task
         )
 
         return ExecutionAgentResult(
-            llmAnswer = llmResponse,
-            applyResult = applyResult
+            llmAnswer = gatewayResult.answer,
+            applyResult = applyResult,
+            gatewayResult = gatewayResult
         )
     }
+
+    private fun buildGatewayBlockedMessage(result: ExecutionGatewayResult): String = buildString {
+        append("Gateway blocked code generation. ")
+        if (result.inputFindings.isNotEmpty()) {
+            append("Input findings: ${result.inputFindings.joinToString(", ")}. ")
+        }
+        if (result.outputViolations.isNotEmpty()) {
+            append("Output violations: ${result.outputViolations.joinToString(", ")}.")
+        }
+    }.trim()
 
     private fun readIfExists(relativePath: Path): String {
         return runCatching { fileTools.read(relativePath) }
@@ -104,28 +124,24 @@ class ExecutionTaskExecutor(
             "Use",
             "Cli"
         )
-
-        val EXECUTION_CONFIG = OllamaGenerationConfig(
-            name = "execution-loop",
-            options = OllamaOptions(
-                temperature = 0.1,
-                num_predict = 2_400,
-                num_ctx = 12_288,
-                top_p = 0.85,
-                repeat_penalty = 1.1
-            ),
-            think = false
-        )
     }
 }
 
 data class ExecutionAgentResult(
     val llmAnswer: String,
-    val applyResult: FileApplyResult
+    val applyResult: FileApplyResult,
+    val gatewayResult: ExecutionGatewayResult? = null
 ) {
     val agentSummary: String
         get() = buildString {
             appendLine(applyResult.message)
+            gatewayResult?.let { gateway ->
+                appendLine()
+                appendLine(
+                    "Gateway: action=${gateway.inputGuardAction}, " +
+                        "findings=${gateway.inputFindings}, blocked=${gateway.blocked}"
+                )
+            }
             appendLine()
             append(llmAnswer.take(MAX_SUMMARY_CHARS))
             if (llmAnswer.length > MAX_SUMMARY_CHARS) {

@@ -8,6 +8,7 @@ class ExecutionLoopRunner(
     private val queueLoader: ExecutionTaskQueueLoader,
     private val taskExecutor: ExecutionTaskExecutor,
     private val taskValidator: ExecutionTaskValidator,
+    private val securityReviewer: ExecutionSecurityReviewer?,
     private val gitCommitter: ExecutionGitCommitter,
     private val logWriterFactory: (String) -> ExecutionLogWriter,
     private val metricsWriter: ExecutionMetricsWriter
@@ -74,16 +75,85 @@ class ExecutionLoopRunner(
                     continue
                 }
 
+                if (agentResult.gatewayResult?.blocked == true) {
+                    val gatewayMessage = agentResult.applyResult.message
+                    val record = ExecutionAttemptRecord(
+                        taskId = task.id,
+                        taskDescription = task.description,
+                        taskType = task.type,
+                        profile = task.profile,
+                        startedAt = attemptStartedAt,
+                        attemptNumber = attemptNumber,
+                        agentResult = agentResult.agentSummary,
+                        validationResult = "Skipped: gateway blocked generation.",
+                        gatewayResult = renderGatewayLog(agentResult.gatewayResult),
+                        commitResult = null,
+                        status = ExecutionTaskStatus.FAILED,
+                        failureCategory = ExecutionFailureCategory.GATEWAY_BLOCKED,
+                        duration = Duration.between(attemptStartedAt, Instant.now())
+                    )
+                    attempts += record
+                    logWriter.recordAttempt(record)
+                    lastFailureCategory = ExecutionFailureCategory.GATEWAY_BLOCKED
+                    lastFailureReason = gatewayMessage
+                    previousFailure = gatewayMessage
+                    continue
+                }
+
                 val validationResult = taskValidator.validate(task, agentResult)
-                val attemptFinishedAt = Instant.now()
-                val status = if (validationResult.passed) {
-                    ExecutionTaskStatus.SUCCESS
+                if (!validationResult.passed) {
+                    val record = buildAttemptRecord(
+                        task = task,
+                        attemptStartedAt = attemptStartedAt,
+                        attemptNumber = attemptNumber,
+                        agentResult = agentResult,
+                        validationResult = validationResult.message,
+                        securityResult = null,
+                        gatewayResult = renderGatewayLog(agentResult.gatewayResult),
+                        commitResult = null,
+                        status = ExecutionTaskStatus.FAILED,
+                        failureCategory = validationResult.category
+                    )
+                    attempts += record
+                    logWriter.recordAttempt(record)
+                    lastFailureCategory = validationResult.category
+                    lastFailureReason = validationResult.message
+                    previousFailure = validationResult.message
+                    continue
+                }
+
+                val securityResult = if (config.securityReviewEnabled && securityReviewer != null) {
+                    securityReviewer.review(agentResult, task)
                 } else {
-                    ExecutionTaskStatus.FAILED
+                    null
+                }
+
+                if (securityResult?.decision == SecurityReviewDecision.BLOCK) {
+                    val record = buildAttemptRecord(
+                        task = task,
+                        attemptStartedAt = attemptStartedAt,
+                        attemptNumber = attemptNumber,
+                        agentResult = agentResult,
+                        validationResult = validationResult.message,
+                        securityResult = renderSecurityLog(securityResult),
+                        gatewayResult = renderGatewayLog(
+                            agentResult.gatewayResult,
+                            securityResult.gatewayCalls
+                        ),
+                        commitResult = null,
+                        status = ExecutionTaskStatus.FAILED,
+                        failureCategory = ExecutionFailureCategory.SECURITY_REVIEW
+                    )
+                    attempts += record
+                    logWriter.recordAttempt(record)
+                    lastFailureCategory = ExecutionFailureCategory.SECURITY_REVIEW
+                    lastFailureReason = securityResult.feedback
+                    previousFailure = securityResult.feedback
+                    continue
                 }
 
                 var commitResult: String? = null
-                if (validationResult.passed && config.createCommits) {
+                if (config.createCommits) {
                     val commitMessage = task.commitMessage ?: "execution-loop: ${task.id}"
                     commitResult = gitCommitter.commit(
                         files = agentResult.applyResult.appliedFiles,
@@ -91,40 +161,35 @@ class ExecutionLoopRunner(
                     ).message
                 }
 
-                val record = ExecutionAttemptRecord(
-                    taskId = task.id,
-                    taskDescription = task.description,
-                    taskType = task.type,
-                    profile = task.profile,
-                    startedAt = attemptStartedAt,
+                val securityLog = securityResult?.let { renderSecurityLog(it) }
+                if (securityResult?.decision == SecurityReviewDecision.PASS_WITH_WARNINGS) {
+                    securityLog?.let { logWriter.appendWarning(task.id, it) }
+                }
+
+                val record = buildAttemptRecord(
+                    task = task,
+                    attemptStartedAt = attemptStartedAt,
                     attemptNumber = attemptNumber,
-                    agentResult = agentResult.agentSummary,
+                    agentResult = agentResult,
                     validationResult = validationResult.message,
+                    securityResult = securityLog,
+                    gatewayResult = renderGatewayLog(
+                        agentResult.gatewayResult,
+                        securityResult?.gatewayCalls.orEmpty()
+                    ),
                     commitResult = commitResult,
-                    status = status,
-                    failureCategory = if (validationResult.passed) {
-                        ExecutionFailureCategory.NONE
-                    } else {
-                        validationResult.category
-                    },
-                    duration = Duration.between(attemptStartedAt, attemptFinishedAt)
+                    status = ExecutionTaskStatus.SUCCESS,
+                    failureCategory = ExecutionFailureCategory.NONE
                 )
 
                 attempts += record
                 logWriter.recordAttempt(record)
-
-                if (validationResult.passed) {
-                    taskSucceeded = true
-                    completedTasks++
-                    if (attemptNumber == 1) {
-                        firstPassSuccesses++
-                    }
-                    break
+                taskSucceeded = true
+                completedTasks++
+                if (attemptNumber == 1) {
+                    firstPassSuccesses++
                 }
-
-                lastFailureCategory = validationResult.category
-                lastFailureReason = validationResult.message
-                previousFailure = validationResult.message
+                break
             }
 
             attemptedTasks++
@@ -160,7 +225,7 @@ class ExecutionLoopRunner(
         val summary = ExecutionRunSummary(
             runId = runId,
             runNumber = config.runNumber,
-            model = config.ollamaModel,
+            model = config.gatewayModel,
             startedAt = startedAt,
             finishedAt = finishedAt,
             totalTasks = tasks.size,
@@ -185,5 +250,61 @@ class ExecutionLoopRunner(
         logWriter.writeSummary(summary)
         metricsWriter.write(summary)
         return summary
+    }
+
+    private fun buildAttemptRecord(
+        task: ExecutionTask,
+        attemptStartedAt: Instant,
+        attemptNumber: Int,
+        agentResult: ExecutionAgentResult,
+        validationResult: String,
+        securityResult: String?,
+        gatewayResult: String?,
+        commitResult: String?,
+        status: ExecutionTaskStatus,
+        failureCategory: ExecutionFailureCategory
+    ): ExecutionAttemptRecord = ExecutionAttemptRecord(
+        taskId = task.id,
+        taskDescription = task.description,
+        taskType = task.type,
+        profile = task.profile,
+        startedAt = attemptStartedAt,
+        attemptNumber = attemptNumber,
+        agentResult = agentResult.agentSummary,
+        validationResult = validationResult,
+        securityResult = securityResult,
+        gatewayResult = gatewayResult,
+        commitResult = commitResult,
+        status = status,
+        failureCategory = failureCategory,
+        duration = Duration.between(attemptStartedAt, Instant.now())
+    )
+
+    private fun renderSecurityLog(result: ExecutionSecurityReviewResult): String = buildString {
+        appendLine("Decision: ${result.decision}")
+        appendLine("Summary: ${result.summary}")
+        result.findings.forEach { finding ->
+            appendLine("- [${finding.severity}] ${finding.category}: ${finding.message} (${finding.source})")
+        }
+    }.trim()
+
+    private fun renderGatewayLog(
+        generation: ExecutionGatewayResult?,
+        reviewCalls: List<GatewayCallLog> = emptyList()
+    ): String? {
+        val parts = mutableListOf<String>()
+        generation?.toGatewayCallLog()?.let { parts += renderSingleGatewayCall(it) }
+        reviewCalls.forEach { parts += renderSingleGatewayCall(it) }
+        return parts.takeIf { it.isNotEmpty() }?.joinToString("\n")
+    }
+
+    private fun renderSingleGatewayCall(call: GatewayCallLog): String = buildString {
+        append("purpose=${call.purpose}, action=${call.inputGuardAction}, blocked=${call.blocked}")
+        if (call.inputFindings.isNotEmpty()) {
+            append(", inputFindings=${call.inputFindings}")
+        }
+        if (call.outputViolations.isNotEmpty()) {
+            append(", outputViolations=${call.outputViolations}")
+        }
     }
 }

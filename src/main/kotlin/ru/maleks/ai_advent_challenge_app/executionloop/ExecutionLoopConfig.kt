@@ -8,8 +8,10 @@ data class ExecutionLoopConfig(
     val logDirectory: Path,
     val metricsDirectory: Path,
     val maxAttemptsPerTask: Int = 2,
-    val ollamaBaseUrl: String,
-    val ollamaModel: String,
+    val gatewayBaseUrl: String,
+    val gatewayModel: String,
+    val gatewayApiKey: String? = null,
+    val securityReviewEnabled: Boolean = true,
     val runNumber: Int = 1,
     val taskLimit: Int? = null,
     val createCommits: Boolean = true

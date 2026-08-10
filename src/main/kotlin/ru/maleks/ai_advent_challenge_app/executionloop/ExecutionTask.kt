@@ -90,7 +90,9 @@ enum class ExecutionFailureCategory {
     INVARIANTS,
     GRADLE_TEST,
     LLM_ERROR,
-    GIT_COMMIT
+    GIT_COMMIT,
+    SECURITY_REVIEW,
+    GATEWAY_BLOCKED
 }
 
 data class ExecutionAttemptRecord(
@@ -102,6 +104,8 @@ data class ExecutionAttemptRecord(
     val attemptNumber: Int,
     val agentResult: String,
     val validationResult: String,
+    val securityResult: String? = null,
+    val gatewayResult: String? = null,
     val commitResult: String?,
     val status: ExecutionTaskStatus,
     val failureCategory: ExecutionFailureCategory,

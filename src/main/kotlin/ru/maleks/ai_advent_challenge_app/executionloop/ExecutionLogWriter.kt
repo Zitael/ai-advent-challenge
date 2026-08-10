@@ -36,6 +36,17 @@ class ExecutionLogWriter(
 
     fun logFilePath(): Path = logFile
 
+    fun appendWarning(taskId: String, message: String) {
+        Files.createDirectories(logDirectory)
+        Files.writeString(
+            logFile,
+            "\n> Security warning for $taskId:\n> ${message.replace("\n", "\n> ")}\n",
+            StandardCharsets.UTF_8,
+            java.nio.file.StandardOpenOption.CREATE,
+            java.nio.file.StandardOpenOption.APPEND
+        )
+    }
+
     private fun renderAttempts(): String = buildString {
         appendLine("# Execution Loop Run $runId")
         appendLine()
@@ -106,6 +117,22 @@ class ExecutionLogWriter(
         appendLine("```text")
         appendLine(attempt.validationResult.trim().ifBlank { "<empty>" })
         appendLine("```")
+        attempt.securityResult?.let { security ->
+            appendLine()
+            appendLine("#### Security review")
+            appendLine()
+            appendLine("```text")
+            appendLine(security.trim())
+            appendLine("```")
+        }
+        attempt.gatewayResult?.let { gateway ->
+            appendLine()
+            appendLine("#### Gateway audit")
+            appendLine()
+            appendLine("```text")
+            appendLine(gateway.trim())
+            appendLine("```")
+        }
     }
 
     private fun formatInstant(instant: Instant): String =

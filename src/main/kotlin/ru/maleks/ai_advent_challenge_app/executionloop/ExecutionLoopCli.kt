@@ -6,7 +6,6 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.jackson.jackson
-import ru.maleks.ai_advent_challenge_app.llm.ollama.OllamaClient
 import ru.maleks.ai_advent_challenge_app.projectfiles.ProjectFileTools
 import ru.maleks.ai_advent_challenge_app.release.ReleaseCommandRunner
 import java.nio.file.Files
@@ -21,18 +20,22 @@ suspend fun main(args: Array<String>) {
             ?: "."
     ).toAbsolutePath().normalize()
 
-    val ollamaBaseUrl = dotenv["OLLAMA_BASE_URL"]
-        ?: System.getenv("OLLAMA_BASE_URL")
-        ?: "http://localhost:11434"
+    val gatewayBaseUrl = dotenv["GATEWAY_BASE_URL"]
+        ?: System.getenv("GATEWAY_BASE_URL")
+        ?: "http://127.0.0.1:8090"
 
-    val ollamaModel = dotenv["OLLAMA_MODEL"]
-        ?: System.getenv("OLLAMA_MODEL")
-        ?: "qwen3:8b"
+    val gatewayModel = dotenv["GATEWAY_DEFAULT_MODEL"]
+        ?: System.getenv("GATEWAY_DEFAULT_MODEL")
+        ?: "openai/gpt-4o-mini"
+
+    val gatewayApiKey = dotenv["GATEWAY_API_KEY"]
+        ?: System.getenv("GATEWAY_API_KEY")
 
     val queueFile = resolveQueueFile(projectRoot, args)
     val taskLimit = readIntArg(args, "--limit=")
     val runNumber = readIntArg(args, "--run=") ?: 1
     val createCommits = !args.contains("--no-commit")
+    val securityReviewEnabled = !args.contains("--no-security")
 
     val logDirectory = projectRoot.resolve("build/execution-loop/logs")
     val metricsDirectory = projectRoot.resolve("build/execution-loop/metrics")
@@ -44,9 +47,11 @@ suspend fun main(args: Array<String>) {
         queueFile = queueFile,
         logDirectory = logDirectory,
         metricsDirectory = metricsDirectory,
-        maxAttemptsPerTask = 2,
-        ollamaBaseUrl = ollamaBaseUrl.removeSuffix("/"),
-        ollamaModel = ollamaModel,
+        maxAttemptsPerTask = if (securityReviewEnabled) 3 else 2,
+        gatewayBaseUrl = gatewayBaseUrl.removeSuffix("/"),
+        gatewayModel = gatewayModel,
+        gatewayApiKey = gatewayApiKey,
+        securityReviewEnabled = securityReviewEnabled,
         runNumber = runNumber,
         taskLimit = taskLimit,
         createCommits = createCommits
@@ -64,17 +69,27 @@ suspend fun main(args: Array<String>) {
 
     try {
         val fileTools = ProjectFileTools(projectRoot)
-        val ollamaClient = OllamaClient(
+        val gatewayClient = ExecutionGatewayClient(
             httpClient = httpClient,
-            baseUrl = config.ollamaBaseUrl,
-            model = config.ollamaModel
+            baseUrl = config.gatewayBaseUrl,
+            model = config.gatewayModel,
+            gatewayApiKey = config.gatewayApiKey
         )
+
+        val securityReviewer = if (config.securityReviewEnabled) {
+            ExecutionSecurityReviewer(
+                gatewayClient = gatewayClient,
+                fileTools = fileTools
+            )
+        } else {
+            null
+        }
 
         val runner = ExecutionLoopRunner(
             config = config,
             queueLoader = ExecutionTaskQueueLoader(),
             taskExecutor = ExecutionTaskExecutor(
-                ollamaClient = ollamaClient,
+                gatewayClient = gatewayClient,
                 fileTools = fileTools,
                 fileChangeApplier = ExecutionFileChangeApplier(fileTools)
             ),
@@ -82,6 +97,7 @@ suspend fun main(args: Array<String>) {
                 fileTools = fileTools,
                 commandRunner = ReleaseCommandRunner(projectRoot)
             ),
+            securityReviewer = securityReviewer,
             gitCommitter = ExecutionGitCommitter(projectRoot),
             logWriterFactory = { runId ->
                 ExecutionLogWriter(config.logDirectory, runId)
@@ -89,13 +105,15 @@ suspend fun main(args: Array<String>) {
             metricsWriter = ExecutionMetricsWriter(config.metricsDirectory)
         )
 
-        System.out.println("AI Advent Challenge — Day 5")
-        System.out.println("Execution Loop")
+        System.out.println("AI Advent Challenge — Day 14")
+        System.out.println("Execution Loop + Security Step")
         System.out.println("Project: $projectRoot")
         System.out.println("Queue: $queueFile")
-        System.out.println("Model: $ollamaModel")
+        System.out.println("Gateway: $gatewayBaseUrl")
+        System.out.println("Model: $gatewayModel")
         System.out.println("Run number: $runNumber")
         System.out.println("Max attempts per task: ${config.maxAttemptsPerTask}")
+        System.out.println("Security review: ${if (securityReviewEnabled) "enabled" else "disabled"}")
         System.out.println("Git commits: ${if (createCommits) "enabled" else "disabled"}")
         taskLimit?.let { System.out.println("Task limit: $it") }
         System.out.println()

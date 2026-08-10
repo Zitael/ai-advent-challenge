@@ -166,7 +166,7 @@ tasks.register<JavaExec>("prepareRelease") {
 
 tasks.register<JavaExec>("runExecutionLoop") {
     group = "application"
-    description = "Run Day 5 autonomous execution loop over task-pool.md"
+    description = "Run execution loop with security step (Day 14) over task-pool.md"
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set(
         "ru.maleks.ai_advent_challenge_app.executionloop.ExecutionLoopCliKt"
@@ -267,6 +267,13 @@ tasks.register<JavaExec>("runGatewayGuardTests") {
     description = "Run Day 13 gateway input guard test catalog"
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("ru.maleks.ai_advent_challenge_app.gateway.GatewayGuardTestCliKt")
+}
+
+tasks.register<JavaExec>("runSecurityProbe") {
+    group = "verification"
+    description = "Run Day 14 security probe scenarios (heuristic + gateway simulation)"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("ru.maleks.ai_advent_challenge_app.executionloop.ExecutionSecurityProbeCliKt")
 }
 
 dependencies {
