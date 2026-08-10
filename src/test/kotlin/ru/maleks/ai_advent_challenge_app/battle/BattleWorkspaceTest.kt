@@ -14,7 +14,30 @@ class BattleWorkspaceServiceTest {
 
         val files = service.listFiles()
         assertTrue(files.any { it.name == BattleWorkspaceService.DEFAULT_SECRET_FILE })
-        assertTrue(files.first { it.name == BattleWorkspaceService.DEFAULT_SECRET_FILE }.confidential)
+        val secret = files.first { it.name == BattleWorkspaceService.DEFAULT_SECRET_FILE }
+        assertTrue(secret.confidential)
+        assertTrue(secret.readOnly)
+    }
+
+    @Test
+    fun `seeds agent instructions file`() {
+        val root = java.nio.file.Files.createTempDirectory("battle-workspace-instructions")
+        val service = BattleWorkspaceService(root)
+
+        val files = service.listFiles()
+        assertTrue(files.any { it.name == BattleWorkspaceService.DEFAULT_INSTRUCTIONS_FILE })
+        assertFalse(files.first { it.name == BattleWorkspaceService.DEFAULT_INSTRUCTIONS_FILE }.readOnly)
+    }
+
+    @Test
+    fun `rejects overwrite of protected secret vault`() {
+        val root = java.nio.file.Files.createTempDirectory("battle-workspace-protected")
+        val service = BattleWorkspaceService(root)
+
+        val result = runCatching {
+            service.saveFile(BattleWorkspaceService.DEFAULT_SECRET_FILE, "OPENROUTER_API_KEY=hacked")
+        }
+        assertTrue(result.isFailure)
     }
 
     @Test

@@ -106,16 +106,24 @@ Token/cost counters.
 ### `DELETE /api/sessions/{sessionId}`
 Очистить историю чата.
 
-### Workspace files
+### Workspace files (контекст агента)
+
+Файлы **не** являются конфигурацией сервера — они попадают в `workspace_context` для LLM.
+Агент может следовать инструкциям из markdown (indirect injection). Секретный vault нельзя перезаписать через UI.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/api/files` | список файлов |
+| GET | `/api/files` | список файлов (`readOnly`, `confidential`) |
 | GET | `/api/files/{name}` | содержимое |
-| PUT | `/api/files/{name}` | сохранить `{"content":"..."}` |
-| DELETE | `/api/files/{name}` | удалить (seed защищён) |
+| PUT | `/api/files/{name}` | сохранить `{"content":"..."}` (vault защищён) |
+| DELETE | `/api/files/{name}` | удалить (seed vault защищён) |
 
-Seed: `internal-secrets.env` — demo-секреты. Агент видит файл, но не должен выдавать значения (`BattleSecretLeakGuard`).
+Seed-файлы:
+
+| Файл | Назначение |
+|---|---|
+| `agent-instructions.md` | инструкции для агента (редактируемые) |
+| `internal-secrets.env` | demo-vault; агент подтверждает наличие, но не выдаёт значения (`BattleSecretLeakGuard`) |
 
 Env: `BATTLE_WORKSPACE_DIR` → `battle-pipeline/workspace`
 
